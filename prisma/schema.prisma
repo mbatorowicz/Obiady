@@ -1,0 +1,163 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  PARENT
+  ADMIN
+}
+
+enum PaymentStatus {
+  UNPAID
+  PARTIAL
+  PAID
+}
+
+model User {
+  id           String        @id @default(cuid())
+  email        String        @unique
+  name         String
+  passwordHash String
+  role         Role          @default(PARENT)
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+  children     ParentChild[]
+  absences     Absence[]     @relation("AbsenceReporter")
+  payments     Payment[]     @relation("PaymentPayer")
+}
+
+model Child {
+  id          String         @id @default(cuid())
+  firstName   String
+  lastName    String
+  className   String
+  active      Boolean        @default(true)
+  createdAt   DateTime       @default(now())
+  updatedAt   DateTime       @updatedAt
+  parents     ParentChild[]
+  absences    Absence[]
+  invoices    InvoiceMonth[]
+  payments    Payment[]
+}
+
+model ParentChild {
+  id       String @id @default(cuid())
+  parentId String
+  childId  String
+  parent   User   @relation(fields: [parentId], references: [id], onDelete: Cascade)
+  child    Child  @relation(fields: [childId], references: [id], onDelete: Cascade)
+
+  @@unique([parentId, childId])
+}
+
+model MealSettings {
+  id            String   @id @default("default")
+  mealPrice     Float    @default(10)
+  bankAccount   String   @default("00 0000 0000 0000 0000 0000 0000")
+  bankRecipient String   @default("Szkoła")
+  deadlineHour  Int      @default(14)
+  updatedAt     DateTime @updatedAt
+}
+
+model SchoolDay {
+  id       String   @id @default(cuid())
+  date     DateTime @unique
+  hasMeals Boolean  @default(true)
+  note     String?
+}
+
+model MenuFieldDef {
+  id        String           @id @default(cuid())
+  label     String
+  sortOrder Int              @default(0)
+  required  Boolean          @default(false)
+  active    Boolean          @default(true)
+  createdAt DateTime         @default(now())
+  updatedAt DateTime         @updatedAt
+  values    MenuEntryValue[]
+}
+
+model MenuEntry {
+  id        String           @id @default(cuid())
+  date      DateTime         @unique
+  createdAt DateTime         @default(now())
+  updatedAt DateTime         @updatedAt
+  values    MenuEntryValue[]
+}
+
+model MenuEntryValue {
+  id          String       @id @default(cuid())
+  menuEntryId String
+  fieldDefId  String
+  value       String
+  imagePath   String?
+  menuEntry   MenuEntry    @relation(fields: [menuEntryId], references: [id], onDelete: Cascade)
+  fieldDef    MenuFieldDef @relation(fields: [fieldDefId], references: [id], onDelete: Cascade)
+
+  @@unique([menuEntryId, fieldDefId])
+}
+
+model Absence {
+  id           String   @id @default(cuid())
+  childId      String
+  date         DateTime
+  reportedById String
+  onTime       Boolean  @default(true)
+  createdAt    DateTime @default(now())
+  child        Child    @relation(fields: [childId], references: [id], onDelete: Cascade)
+  reportedBy   User     @relation("AbsenceReporter", fields: [reportedById], references: [id])
+
+  @@unique([childId, date])
+  @@index([date])
+}
+
+model InvoiceMonth {
+  id              String        @id @default(cuid())
+  childId         String
+  year            Int
+  month           Int
+  mealDays        Int
+  excusedAbsences Int
+  billableDays    Int
+  amount          Float
+  status          PaymentStatus @default(UNPAID)
+  transferTitle   String
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+  child           Child         @relation(fields: [childId], references: [id], onDelete: Cascade)
+  payments        Payment[]
+
+  @@unique([childId, year, month])
+}
+
+model Payment {
+  id          String       @id @default(cuid())
+  invoiceId   String
+  amount      Float
+  paidAt      DateTime
+  method      String
+  payerUserId String?
+  payerName   String
+  childId     String
+  reference   String?
+  receiptNo   String       @unique
+  note        String?
+  cancelledAt DateTime?
+  createdAt   DateTime     @default(now())
+  invoice     InvoiceMonth @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
+  child       Child        @relation(fields: [childId], references: [id], onDelete: Cascade)
+  payerUser   User?        @relation("PaymentPayer", fields: [payerUserId], references: [id], onDelete: SetNull)
+
+  @@index([childId, paidAt])
+  @@index([invoiceId])
+}
+
+model ReceiptSequence {
+  year Int @id
+  last Int @default(0)
+}
