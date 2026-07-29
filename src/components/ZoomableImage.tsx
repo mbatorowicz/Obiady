@@ -2,6 +2,28 @@
 
 import { useCallback, useEffect, useId, useRef, useState } from "react";
 
+export function ThumbPlaceholder({
+  label,
+  size = 44,
+  className = "thumb",
+}: {
+  label: string;
+  size?: number;
+  className?: string;
+}) {
+  const initial = (label.trim().charAt(0) || "?").toUpperCase();
+  return (
+    <span
+      className={`${className} thumb-placeholder`}
+      style={{ width: size, height: size }}
+      aria-hidden
+      title={label}
+    >
+      {initial}
+    </span>
+  );
+}
+
 export function ZoomableImage({
   src,
   alt,
@@ -16,10 +38,16 @@ export function ZoomableImage({
   size?: number;
 }) {
   const [open, setOpen] = useState(false);
+  const [broken, setBroken] = useState(false);
   const closeBtnRef = useRef<HTMLButtonElement>(null);
   const titleId = useId();
+  const sizeStyle = { width: size, height: size };
 
   const close = useCallback(() => setOpen(false), []);
+
+  useEffect(() => {
+    setBroken(false);
+  }, [src]);
 
   useEffect(() => {
     if (!open) return;
@@ -36,6 +64,10 @@ export function ZoomableImage({
     };
   }, [open, close]);
 
+  if (broken) {
+    return <ThumbPlaceholder label={alt} size={size} className={className} />;
+  }
+
   return (
     <>
       <button
@@ -51,6 +83,8 @@ export function ZoomableImage({
           width={size}
           height={size}
           className={className}
+          style={sizeStyle}
+          onError={() => setBroken(true)}
         />
       </button>
 
@@ -84,7 +118,7 @@ export function ZoomableImage({
               </button>
             </div>
             {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src={src} alt={alt} />
+            <img src={src} alt={alt} onError={() => setBroken(true)} />
           </div>
         </div>
       ) : null}

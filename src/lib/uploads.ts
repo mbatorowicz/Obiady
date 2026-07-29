@@ -2,6 +2,9 @@ import { randomBytes } from "crypto";
 import { mkdir, unlink, writeFile } from "fs/promises";
 import path from "path";
 import { del, put } from "@vercel/blob";
+import { isRemoteImageUrl } from "@/lib/image-url";
+
+export { isRemoteImageUrl, normalizeImageSrc } from "@/lib/image-url";
 
 const LOCAL_UPLOAD_DIR = path.join(process.cwd(), "public", "uploads", "menu");
 
@@ -27,12 +30,20 @@ async function saveLocal(file: File): Promise<string> {
 export async function saveMenuImage(file: File): Promise<string> {
   assertImage(file);
 
-  if (process.env.BLOB_READ_WRITE_TOKEN) {
-    const blob = await put(`menu/${Date.now()}-${randomBytes(6).toString("hex")}.${safeExt(file)}`, file, {
-      access: "public",
-      token: process.env.BLOB_READ_WRITE_TOKEN,
-    });
+  const token = process.env.BLOB_READ_WRITE_TOKEN;
+  if (token) {
+    const blob = await put(
+      `menu/${Date.now()}-${randomBytes(6).toString("hex")}.${safeExt(file)}`,
+      file,
+      { access: "public", token },
+    );
     return blob.url;
+  }
+
+  if (process.env.VERCEL) {
+    throw new Error(
+      "BLOB_REQUIRED: Na produkcji wymagany jest Vercel Blob (BLOB_READ_WRITE_TOKEN).",
+    );
   }
 
   return saveLocal(file);
@@ -41,7 +52,7 @@ export async function saveMenuImage(file: File): Promise<string> {
 export async function deleteMenuImage(imagePath: string | null | undefined) {
   if (!imagePath) return;
 
-  if (imagePath.startsWith("http")) {
+  if (isRemoteImageUrl(imagePath)) {
     if (!process.env.BLOB_READ_WRITE_TOKEN) return;
     try {
       await del(imagePath, { token: process.env.BLOB_READ_WRITE_TOKEN });
@@ -52,6 +63,7 @@ export async function deleteMenuImage(imagePath: string | null | undefined) {
   }
 
   if (!imagePath.startsWith("/uploads/menu/")) return;
+  if (process.env.VERCEL) return;
   const fullPath = path.join(process.cwd(), "public", imagePath);
   try {
     await unlink(fullPath);

@@ -1,8 +1,8 @@
 import Link from "next/link";
 import { prisma } from "@/lib/db";
 import { PageHeader, Field } from "@/components/ui";
-import { ZoomableImage } from "@/components/ZoomableImage";
 import { MenuThumbsSummary } from "@/components/MenuThumbsSummary";
+import { ImageFileField } from "@/components/ImageFileField";
 import { deleteMenuAction, saveMenuAction } from "@/lib/actions/admin-actions";
 import { formatPl, parseDateKey, toDateKey } from "@/lib/dates";
 
@@ -85,34 +85,15 @@ export default async function AdminMenuPage({
                       defaultValue={existing?.value ?? ""}
                     />
                   </Field>
-                  {existing?.imagePath ? (
-                    <div className="flex items-center gap-2">
-                      <ZoomableImage
-                        src={existing.imagePath}
-                        alt={f.label}
-                        caption={existing.value}
-                        size={48}
-                      />
-                      <span className="text-[11px] text-ink-soft">
-                        Obecne zdjęcie — kliknij, aby powiększyć
-                      </span>
-                    </div>
-                  ) : null}
-                  <Field label="Nowe zdjęcie" htmlFor={`image_${f.id}`} inline={false}>
-                    <input
-                      id={`image_${f.id}`}
-                      name={`image_${f.id}`}
-                      type="file"
-                      accept="image/*"
-                      className="input"
-                    />
-                  </Field>
-                  {existing?.imagePath ? (
-                    <label className="flex items-center gap-2 text-xs">
-                      <input type="checkbox" name={`removeImage_${f.id}`} />
-                      Usuń zdjęcie tej pozycji
-                    </label>
-                  ) : null}
+                  <ImageFileField
+                    name={`image_${f.id}`}
+                    label="Zdjęcie"
+                    existingSrc={existing?.imagePath}
+                    existingAlt={f.label}
+                    existingCaption={existing?.value}
+                    removeName={`removeImage_${f.id}`}
+                    size={56}
+                  />
                 </div>
               );
             })

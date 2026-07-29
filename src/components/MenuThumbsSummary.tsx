@@ -1,18 +1,16 @@
-import { ZoomableImage } from "@/components/ZoomableImage";
-import { menuSummary, sortedMenuValues, type MenuValueRow } from "@/lib/menu";
+import { ZoomableImage, ThumbPlaceholder } from "@/components/ZoomableImage";
+import { sortedMenuValues, type MenuValueRow } from "@/lib/menu";
+import { normalizeImageSrc } from "@/lib/image-url";
 
 export function MenuThumbsSummary({
   values,
   thumbSize = 56,
-  maxSummary = 6,
 }: {
   values: MenuValueRow[];
   thumbSize?: number;
   maxSummary?: number;
 }) {
   const items = sortedMenuValues(values).filter((v) => v.value.trim());
-  const withImages = items.filter((v) => v.imagePath);
-  const summary = menuSummary(values, maxSummary);
 
   if (items.length === 0) {
     return <p className="text-xs text-ink-soft">Brak menu</p>;
@@ -20,21 +18,35 @@ export function MenuThumbsSummary({
 
   return (
     <div className="menu-thumbs-summary">
-      {withImages.length > 0 ? (
-        <div className="menu-thumbs-row">
-          {withImages.map((v) => (
-            <ZoomableImage
-              key={v.fieldDef.id + v.value}
-              src={v.imagePath!}
-              alt={v.fieldDef.label}
-              caption={v.value}
-              className="thumb"
-              size={thumbSize}
-            />
-          ))}
-        </div>
-      ) : null}
-      <p className="menu-thumbs-caption">{summary || "—"}</p>
+      <ul className="menu-thumbs-list">
+        {items.map((v) => {
+          const src = normalizeImageSrc(v.imagePath);
+          const dish = v.value.trim();
+          return (
+            <li key={v.fieldDef.id} className="menu-thumb-item">
+              {src ? (
+                <ZoomableImage
+                  src={src}
+                  alt={v.fieldDef.label}
+                  caption={dish}
+                  className="thumb"
+                  size={thumbSize}
+                />
+              ) : (
+                <ThumbPlaceholder
+                  label={v.fieldDef.label}
+                  size={thumbSize}
+                  className="thumb"
+                />
+              )}
+              <div className="menu-thumb-meta">
+                <p className="menu-thumb-label">{v.fieldDef.label}</p>
+                <p className="menu-thumb-value">{dish}</p>
+              </div>
+            </li>
+          );
+        })}
+      </ul>
     </div>
   );
 }
