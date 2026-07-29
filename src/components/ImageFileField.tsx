@@ -1,11 +1,14 @@
 "use client";
 
-import { useEffect, useId, useState } from "react";
+import { useEffect, useId, useRef, useState } from "react";
+import { upload } from "@vercel/blob/client";
 import { ThumbPlaceholder, ZoomableImage } from "@/components/ZoomableImage";
+import { compressImage } from "@/lib/compress-image";
 import { normalizeImageSrc } from "@/lib/image-url";
 
 export function ImageFileField({
   name,
+  urlName,
   label = "Zdjęcie",
   existingSrc,
   existingAlt,
@@ -14,6 +17,7 @@ export function ImageFileField({
   size = 56,
 }: {
   name: string;
+  urlName: string;
   label?: string;
   existingSrc?: string | null;
   existingAlt: string;
@@ -22,7 +26,11 @@ export function ImageFileField({
   size?: number;
 }) {
   const inputId = useId();
+  const fileRef = useRef<HTMLInputElement>(null);
   const [preview, setPreview] = useState<string | null>(null);
+  const [uploadedUrl, setUploadedUrl] = useState<string | null>(null);
+  const [status, setStatus] = useState<"idle" | "uploading" | "ready">("idle");
+  const [localFallback, setLocalFallback] = useState(false);
   const normalizedExisting = normalizeImageSrc(existingSrc ?? null);
 
   useEffect(() => {
@@ -31,8 +39,42 @@ export function ImageFileField({
     };
   }, [preview]);
 
+  async function onFileChange(fileList: FileList | null) {
+    const file = fileList?.[0];
+    if (preview) URL.revokeObjectURL(preview);
+    setPreview(null);
+    setUploadedUrl(null);
+    setLocalFallback(false);
+    setStatus("idle");
+
+    if (!file) return;
+
+    setStatus("uploading");
+    const compressed = await compressImage(file);
+    setPreview(URL.createObjectURL(compressed));
+
+    try {
+      const blob = await upload(`menu/${compressed.name}`, compressed, {
+        access: "public",
+        handleUploadUrl: "/api/menu-upload",
+      });
+      setUploadedUrl(blob.url);
+      setLocalFallback(false);
+      if (fileRef.current) fileRef.current.value = "";
+      setStatus("ready");
+    } catch {
+      // No Blob token (local): submit compressed file via Server Action
+      const dt = new DataTransfer();
+      dt.items.add(compressed);
+      if (fileRef.current) fileRef.current.files = dt.files;
+      setLocalFallback(true);
+      setStatus("ready");
+    }
+  }
+
   return (
     <div className="image-file-field">
+      <input type="hidden" name={urlName} value={uploadedUrl ?? ""} />
       <div className="image-file-preview">
         {preview ? (
           // eslint-disable-next-line @next/next/no-img-element
@@ -59,28 +101,36 @@ export function ImageFileField({
             {label}
           </label>
           <input
+            ref={fileRef}
             id={inputId}
-            name={name}
+            name={localFallback ? name : undefined}
             type="file"
             accept="image/*"
             className="input"
-            onChange={(e) => {
-              const file = e.target.files?.[0];
-              if (preview) URL.revokeObjectURL(preview);
-              setPreview(file ? URL.createObjectURL(file) : null);
-            }}
+            disabled={status === "uploading"}
+            onChange={(e) => void onFileChange(e.target.files)}
           />
-          {preview ? (
-            <p className="text-[11px] text-ink-soft mt-1">
-              Podgląd nowego pliku — zapisze się po „Zapisz menu”.
+          {status === "uploading" ? (
+            <p className="text-[11px] text-ink-soft mt-1">Wysyłanie zdjęcia…</p>
+          ) : null}
+          {status === "ready" && uploadedUrl ? (
+            <p className="text-[11px] text-ok mt-1">
+              Zdjęcie gotowe — zapisze się po „Zapisz menu”.
             </p>
-          ) : normalizedExisting ? (
+          ) : null}
+          {status === "ready" && localFallback ? (
+            <p className="text-[11px] text-ink-soft mt-1">
+              Podgląd gotowy — kliknij „Zapisz menu”.
+            </p>
+          ) : null}
+          {status === "idle" && normalizedExisting ? (
             <p className="text-[11px] text-ink-soft mt-1">
               Obecne zdjęcie — kliknij miniaturę, aby powiększyć.
             </p>
-          ) : (
+          ) : null}
+          {status === "idle" && !normalizedExisting ? (
             <p className="text-[11px] text-ink-soft mt-1">Brak zdjęcia.</p>
-          )}
+          ) : null}
         </div>
       </div>
       {removeName && normalizedExisting && !preview ? (

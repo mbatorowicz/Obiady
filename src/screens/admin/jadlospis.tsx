@@ -9,7 +9,7 @@ import { formatPl, parseDateKey, toDateKey } from "@/lib/dates";
 export default async function AdminMenuPage({
   searchParams,
 }: {
-  searchParams: Promise<{ date?: string }>;
+  searchParams: Promise<{ date?: string; ok?: string; error?: string }>;
 }) {
   const params = await searchParams;
   const todayKey = toDateKey(new Date());
@@ -45,6 +45,17 @@ export default async function AdminMenuPage({
         title="Jadłospis"
         description="Każda pozycja może mieć własne zdjęcie. „Edytuj” przy dniu otwiera formularz."
       />
+
+      {params.ok === "1" ? (
+        <div className="toast-ok" role="status">
+          Jadłospis zapisany.
+        </div>
+      ) : null}
+      {params.error ? (
+        <div className="mb-3 rounded-xl bg-red-50 text-danger px-3 py-2 text-sm">
+          Nie udało się zapisać menu. Sprawdź pola i zdjęcia, spróbuj ponownie.
+        </div>
+      ) : null}
 
       <div className="grid gap-4 lg:grid-cols-[22rem_1fr]">
         <form action={saveMenuAction} className="panel form-stack h-fit">
@@ -87,6 +98,7 @@ export default async function AdminMenuPage({
                   </Field>
                   <ImageFileField
                     name={`image_${f.id}`}
+                    urlName={`imageUrl_${f.id}`}
                     label="Zdjęcie"
                     existingSrc={existing?.imagePath}
                     existingAlt={f.label}

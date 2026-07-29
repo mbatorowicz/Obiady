@@ -1,13 +1,14 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { redirect } from "next/navigation";
 import bcrypt from "bcryptjs";
 import { PaymentStatus, Role } from "@prisma/client";
 import { requireAdmin } from "@/lib/auth";
 import { prisma } from "@/lib/db";
-import { parseDateKey, startOfDay } from "@/lib/dates";
+import { parseDateKey, startOfDay, toDateKey } from "@/lib/dates";
 import { regenerateInvoicesForMonth, upsertInvoice } from "@/lib/billing";
-import { deleteMenuImage, saveMenuImage } from "@/lib/uploads";
+import { deleteMenuImage, isRemoteImageUrl, saveMenuImage } from "@/lib/uploads";
 
 function revalidateAdmin() {
   revalidatePath("/admin");
@@ -169,75 +170,102 @@ export async function moveMenuFieldAction(formData: FormData) {
 }
 
 export async function saveMenuAction(formData: FormData) {
-  await requireAdmin();
-  const date = startOfDay(parseDateKey(String(formData.get("date"))));
+  const dateRaw = String(formData.get("date") || "");
+  const dateKey = dateRaw || toDateKey(new Date());
 
-  const fields = await prisma.menuFieldDef.findMany({
-    where: { active: true },
-    orderBy: { sortOrder: "asc" },
-  });
+  try {
+    await requireAdmin();
+    const date = startOfDay(parseDateKey(dateKey));
 
-  for (const field of fields) {
-    if (!field.required) continue;
-    const val = String(formData.get(`field_${field.id}`) || "").trim();
-    if (!val) {
-      throw new Error(`REQUIRED_FIELD:${field.label}`);
-    }
-  }
+    const fields = await prisma.menuFieldDef.findMany({
+      where: { active: true },
+      orderBy: { sortOrder: "asc" },
+    });
 
-  const entry = await prisma.menuEntry.upsert({
-    where: { date },
-    create: { date },
-    update: {},
-  });
-
-  const existingValues = await prisma.menuEntryValue.findMany({
-    where: { menuEntryId: entry.id },
-  });
-  const existingByField = new Map(existingValues.map((v) => [v.fieldDefId, v]));
-
-  for (const field of fields) {
-    const value = String(formData.get(`field_${field.id}`) || "").trim();
-    const existing = existingByField.get(field.id);
-    const removeImage = formData.get(`removeImage_${field.id}`) === "on";
-    const image = formData.get(`image_${field.id}`);
-
-    if (!value) {
-      if (existing?.imagePath) await deleteMenuImage(existing.imagePath);
-      await prisma.menuEntryValue.deleteMany({
-        where: { menuEntryId: entry.id, fieldDefId: field.id },
-      });
-      continue;
+    for (const field of fields) {
+      if (!field.required) continue;
+      const val = String(formData.get(`field_${field.id}`) || "").trim();
+      if (!val) {
+        throw new Error(`REQUIRED_FIELD:${field.label}`);
+      }
     }
 
-    let imagePath = existing?.imagePath ?? null;
-    if (removeImage && imagePath) {
-      await deleteMenuImage(imagePath);
-      imagePath = null;
-    }
-    if (image instanceof File && image.size > 0) {
-      if (imagePath) await deleteMenuImage(imagePath);
-      imagePath = await saveMenuImage(image);
-    }
+    const entry = await prisma.menuEntry.upsert({
+      where: { date },
+      create: { date },
+      update: {},
+    });
 
-    await prisma.menuEntryValue.upsert({
-      where: {
-        menuEntryId_fieldDefId: {
+    const existingValues = await prisma.menuEntryValue.findMany({
+      where: { menuEntryId: entry.id },
+    });
+    const existingByField = new Map(
+      existingValues.map((v) => [v.fieldDefId, v]),
+    );
+
+    for (const field of fields) {
+      const value = String(formData.get(`field_${field.id}`) || "").trim();
+      const existing = existingByField.get(field.id);
+      const removeImage = formData.get(`removeImage_${field.id}`) === "on";
+      const imageUrl = String(formData.get(`imageUrl_${field.id}`) || "").trim();
+      const image = formData.get(`image_${field.id}`);
+
+      if (!value) {
+        if (existing?.imagePath) await deleteMenuImage(existing.imagePath);
+        await prisma.menuEntryValue.deleteMany({
+          where: { menuEntryId: entry.id, fieldDefId: field.id },
+        });
+        continue;
+      }
+
+      let imagePath = existing?.imagePath ?? null;
+      if (removeImage && imagePath) {
+        await deleteMenuImage(imagePath);
+        imagePath = null;
+      }
+
+      if (isRemoteImageUrl(imageUrl)) {
+        if (imagePath && imagePath !== imageUrl) {
+          await deleteMenuImage(imagePath);
+        }
+        imagePath = imageUrl;
+      } else if (image instanceof File && image.size > 0) {
+        if (imagePath) await deleteMenuImage(imagePath);
+        imagePath = await saveMenuImage(image);
+      }
+
+      await prisma.menuEntryValue.upsert({
+        where: {
+          menuEntryId_fieldDefId: {
+            menuEntryId: entry.id,
+            fieldDefId: field.id,
+          },
+        },
+        create: {
           menuEntryId: entry.id,
           fieldDefId: field.id,
+          value,
+          imagePath,
         },
-      },
-      create: {
-        menuEntryId: entry.id,
-        fieldDefId: field.id,
-        value,
-        imagePath,
-      },
-      update: { value, imagePath },
-    });
+        update: { value, imagePath },
+      });
+    }
+
+    revalidateAdmin();
+  } catch (error) {
+    // Next.js redirect() throws — rethrow
+    if (
+      error &&
+      typeof error === "object" &&
+      "digest" in error &&
+      String((error as { digest?: string }).digest).startsWith("NEXT_REDIRECT")
+    ) {
+      throw error;
+    }
+    redirect(`/admin/jadlospis?date=${encodeURIComponent(dateKey)}&error=1`);
   }
 
-  revalidateAdmin();
+  redirect(`/admin/jadlospis?date=${encodeURIComponent(dateKey)}&ok=1`);
 }
 
 export async function deleteMenuAction(formData: FormData) {

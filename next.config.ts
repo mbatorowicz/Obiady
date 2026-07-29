@@ -1,7 +1,12 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
-  // Zdjęcia jadłospisu: lokalnie /uploads, na Vercel pełne URL z Blob (<img>).
+  experimental: {
+    serverActions: {
+      bodySizeLimit: "4mb",
+    },
+    proxyClientMaxBodySize: "4mb",
+  },
 };
 
 export default nextConfig;
