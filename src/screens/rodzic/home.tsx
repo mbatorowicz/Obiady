@@ -61,7 +61,7 @@ export default async function ParentHomePage({
     }),
     prisma.menuEntry.findMany({
       where: { date: { gte: start, lte: end } },
-      include: { values: { include: { fieldDef: true } } },
+      include: { values: { include: { fieldDef: true, dish: true } } },
     }),
     upsertInvoice(current.id, year, month),
   ]);

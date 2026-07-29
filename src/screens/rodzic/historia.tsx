@@ -35,7 +35,7 @@ export default async function ParentHistoryPage({
   const [pastMenus, absences, invoices] = await Promise.all([
     prisma.menuEntry.findMany({
       where: { date: { lt: today } },
-      include: { values: { include: { fieldDef: true } } },
+      include: { values: { include: { fieldDef: true, dish: true } } },
       orderBy: { date: "desc" },
       take: 40,
     }),

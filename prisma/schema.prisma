@@ -82,6 +82,18 @@ model MenuFieldDef {
   values    MenuEntryValue[]
 }
 
+model Dish {
+  id        String           @id @default(cuid())
+  name      String
+  imagePath String?
+  active    Boolean          @default(true)
+  createdAt DateTime         @default(now())
+  updatedAt DateTime         @updatedAt
+  values    MenuEntryValue[]
+
+  @@index([name])
+}
+
 model MenuEntry {
   id        String           @id @default(cuid())
   date      DateTime         @unique
@@ -94,12 +106,13 @@ model MenuEntryValue {
   id          String       @id @default(cuid())
   menuEntryId String
   fieldDefId  String
-  value       String
-  imagePath   String?
+  dishId      String
   menuEntry   MenuEntry    @relation(fields: [menuEntryId], references: [id], onDelete: Cascade)
   fieldDef    MenuFieldDef @relation(fields: [fieldDefId], references: [id], onDelete: Cascade)
+  dish        Dish         @relation(fields: [dishId], references: [id], onDelete: Restrict)
 
   @@unique([menuEntryId, fieldDefId])
+  @@index([dishId])
 }
 
 model Absence {

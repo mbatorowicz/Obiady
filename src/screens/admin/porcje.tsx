@@ -34,7 +34,7 @@ export default async function AdminPortionsPage({
     }),
     prisma.menuEntry.findUnique({
       where: { date },
-      include: { values: { include: { fieldDef: true } } },
+      include: { values: { include: { fieldDef: true, dish: true } } },
     }),
     prisma.mealSettings.findUnique({ where: { id: "default" } }),
   ]);

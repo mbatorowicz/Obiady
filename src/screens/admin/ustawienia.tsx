@@ -1,28 +1,29 @@
 import { prisma } from "@/lib/db";
 import { PageHeader, Field } from "@/components/ui";
-import {
-  createMenuFieldAction,
-  deleteMenuFieldAction,
-  moveMenuFieldAction,
-  saveSettingsAction,
-  setSchoolDayAction,
-  updateMenuFieldAction,
-} from "@/lib/actions/admin-actions";
+import { saveSettingsAction, setSchoolDayAction } from "@/lib/actions/admin-actions";
 import { toDateKey } from "@/lib/dates";
+import Link from "next/link";
 
 export default async function AdminSettingsPage() {
-  const [settings, overrides, fields] = await Promise.all([
+  const [settings, overrides] = await Promise.all([
     prisma.mealSettings.findUnique({ where: { id: "default" } }),
     prisma.schoolDay.findMany({ orderBy: { date: "desc" }, take: 20 }),
-    prisma.menuFieldDef.findMany({ orderBy: { sortOrder: "asc" } }),
   ]);
 
   return (
     <>
       <PageHeader
         title="Ustawienia"
-        description="Cena obiadu, konto do przelewu, termin zgłoszeń, pola jadłospisu i wyjątki w kalendarzu."
+        description="Cena obiadu, konto do przelewu, termin zgłoszeń i wyjątki w kalendarzu."
       />
+
+      <p className="text-xs text-ink-soft mb-3">
+        Pozycje i katalog potraw znajdziesz w{" "}
+        <Link href="/admin/jadlospis?tab=pozycje" className="underline">
+          Jadłospisie
+        </Link>
+        .
+      </p>
 
       <div className="grid gap-4 lg:grid-cols-2">
         <form action={saveSettingsAction} className="panel form-stack">
@@ -70,8 +71,8 @@ export default async function AdminSettingsPage() {
             />
           </Field>
           <p className="text-xs text-ink-soft">
-            Rodzic może zgłosić brak obiadu do tej godziny w dniu posiłku. Późniejsze
-            zgłoszenie nie obniża należności.
+            Rodzic może zgłosić brak obiadu do tej godziny w dniu posiłku.
+            Późniejsze zgłoszenie nie obniża należności.
           </p>
           <button type="submit" className="btn btn-primary">
             Zapisz ustawienia
@@ -88,7 +89,12 @@ export default async function AdminSettingsPage() {
             Tego dnia jest żywienie
           </label>
           <Field label="Notatka" htmlFor="note">
-            <input id="note" name="note" className="input" placeholder="np. ferie zimowe" />
+            <input
+              id="note"
+              name="note"
+              className="input"
+              placeholder="np. ferie zimowe"
+            />
           </Field>
           <button type="submit" className="btn btn-primary">
             Zapisz wyjątek
@@ -108,120 +114,6 @@ export default async function AdminSettingsPage() {
           ) : null}
         </form>
       </div>
-
-      <section className="panel mt-4">
-        <div className="flex flex-wrap items-end justify-between gap-3 mb-2">
-          <div>
-            <h2 className="font-display text-lg">Pozycje jadłospisu</h2>
-            <p className="text-xs text-ink-soft">
-              Nazwy, kolejność i wymagalność (np. Zupa, Drugie danie, Deser).
-            </p>
-          </div>
-          <form action={createMenuFieldAction} className="flex flex-wrap gap-2 items-end">
-            <div>
-              <label className="label">Nowa nazwa</label>
-              <input name="label" required className="input w-40" placeholder="Deser" />
-            </div>
-            <label className="flex items-center gap-1 text-xs pb-1">
-              <input type="checkbox" name="required" />
-              Wymagane
-            </label>
-            <button type="submit" className="btn btn-primary btn-xs">
-              Dodaj pole
-            </button>
-          </form>
-        </div>
-
-        <table className="compact-table">
-          <colgroup>
-            <col style={{ width: "5.5rem" }} />
-            <col />
-            <col className="col-check" />
-            <col className="col-check" />
-            <col className="col-actions" style={{ width: "7rem" }} />
-            <col className="col-actions" />
-          </colgroup>
-          <thead>
-            <tr>
-              <th>Kolejność</th>
-              <th>Nazwa</th>
-              <th className="col-check">Wymagane</th>
-              <th className="col-check">Aktywne</th>
-              <th className="col-actions"></th>
-              <th className="col-actions">Akcje</th>
-            </tr>
-          </thead>
-          <tbody>
-            {fields.map((f) => (
-              <tr key={f.id}>
-                <td>
-                  <div className="flex gap-1">
-                    <form action={moveMenuFieldAction}>
-                      <input type="hidden" name="id" value={f.id} />
-                      <input type="hidden" name="direction" value="up" />
-                      <button type="submit" className="btn btn-secondary btn-xs">
-                        ↑
-                      </button>
-                    </form>
-                    <form action={moveMenuFieldAction}>
-                      <input type="hidden" name="id" value={f.id} />
-                      <input type="hidden" name="direction" value="down" />
-                      <button type="submit" className="btn btn-secondary btn-xs">
-                        ↓
-                      </button>
-                    </form>
-                  </div>
-                </td>
-                <td>
-                  <form id={`field-${f.id}`} action={updateMenuFieldAction}>
-                    <input type="hidden" name="id" value={f.id} />
-                    <input type="hidden" name="sortOrder" value={f.sortOrder} />
-                    <input
-                      name="label"
-                      defaultValue={f.label}
-                      className="input"
-                      required
-                    />
-                  </form>
-                </td>
-                <td className="col-check">
-                  <input
-                    form={`field-${f.id}`}
-                    type="checkbox"
-                    name="required"
-                    defaultChecked={f.required}
-                  />
-                </td>
-                <td className="col-check">
-                  <input
-                    form={`field-${f.id}`}
-                    type="checkbox"
-                    name="active"
-                    defaultChecked={f.active}
-                  />
-                </td>
-                <td className="col-actions">
-                  <button
-                    form={`field-${f.id}`}
-                    type="submit"
-                    className="btn btn-secondary btn-xs"
-                  >
-                    Zapisz
-                  </button>
-                </td>
-                <td className="col-actions">
-                  <form action={deleteMenuFieldAction}>
-                    <input type="hidden" name="id" value={f.id} />
-                    <button type="submit" className="btn btn-danger btn-xs">
-                      Usuń
-                    </button>
-                  </form>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </section>
     </>
   );
 }

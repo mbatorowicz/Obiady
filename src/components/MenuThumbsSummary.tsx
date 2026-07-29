@@ -1,5 +1,10 @@
 import { ZoomableImage, ThumbPlaceholder } from "@/components/ZoomableImage";
-import { sortedMenuValues, type MenuValueRow } from "@/lib/menu";
+import {
+  dishImage,
+  dishName,
+  sortedMenuValues,
+  type MenuValueRow,
+} from "@/lib/menu";
 import { normalizeImageSrc } from "@/lib/image-url";
 
 export function MenuThumbsSummary({
@@ -10,7 +15,7 @@ export function MenuThumbsSummary({
   thumbSize?: number;
   maxSummary?: number;
 }) {
-  const items = sortedMenuValues(values).filter((v) => v.value.trim());
+  const items = sortedMenuValues(values).filter((v) => dishName(v));
 
   if (items.length === 0) {
     return <p className="text-xs text-ink-soft">Brak menu</p>;
@@ -20,15 +25,15 @@ export function MenuThumbsSummary({
     <div className="menu-thumbs-summary">
       <ul className="menu-thumbs-list">
         {items.map((v) => {
-          const src = normalizeImageSrc(v.imagePath);
-          const dish = v.value.trim();
+          const name = dishName(v);
+          const src = normalizeImageSrc(dishImage(v));
           return (
             <li key={v.fieldDef.id} className="menu-thumb-item">
               {src ? (
                 <ZoomableImage
                   src={src}
                   alt={v.fieldDef.label}
-                  caption={dish}
+                  caption={name}
                   className="thumb"
                   size={thumbSize}
                 />
@@ -41,7 +46,7 @@ export function MenuThumbsSummary({
               )}
               <div className="menu-thumb-meta">
                 <p className="menu-thumb-label">{v.fieldDef.label}</p>
-                <p className="menu-thumb-value">{dish}</p>
+                <p className="menu-thumb-value">{name}</p>
               </div>
             </li>
           );

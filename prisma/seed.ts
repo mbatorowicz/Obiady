@@ -9,6 +9,12 @@ import {
 
 const prisma = new PrismaClient();
 
+async function upsertDish(name: string) {
+  const existing = await prisma.dish.findFirst({ where: { name } });
+  if (existing) return existing;
+  return prisma.dish.create({ data: { name, active: true } });
+}
+
 async function main() {
   const passwordHash = await bcrypt.hash("haslo123", 10);
 
@@ -82,6 +88,27 @@ async function main() {
     },
   });
 
+  const dishSoup = {
+    Pomidorowa: await upsertDish("Pomidorowa"),
+    Ogórkowa: await upsertDish("Ogórkowa"),
+    Rosół: await upsertDish("Rosół"),
+    Jarzynowa: await upsertDish("Jarzynowa"),
+    Grochówka: await upsertDish("Grochówka"),
+  };
+  const dishMain = {
+    Kotlet: await upsertDish("Kotlet schabowy, ziemniaki, surówka"),
+    Spaghetti: await upsertDish("Spaghetti bolognese"),
+    Ryba: await upsertDish("Ryba panierowana, ryż, marchewka"),
+    Nalesniki: await upsertDish("Naleśniki z serem"),
+    Kurczak: await upsertDish("Kurczak pieczony, kasza, buraczki"),
+  };
+  const dishDrink = {
+    Kompot: await upsertDish("Kompot"),
+    Herbata: await upsertDish("Herbata"),
+    Sok: await upsertDish("Sok"),
+    Kakao: await upsertDish("Kakao"),
+  };
+
   const jan = await prisma.child.upsert({
     where: { id: "seed-child-jan" },
     update: {},
@@ -124,15 +151,28 @@ async function main() {
   const days = defaultMealDaysInMonth(year, month);
 
   const sampleMenus = [
-    { soup: "Pomidorowa", main: "Kotlet schabowy, dba ziemniaki, surówka", drink: "Kompot" },
-    { soup: "Ogórkowa", main: "Spaghetti bolognese", drink: "Herbata" },
-    { soup: "Rosół", main: "Ryba panierowana, ryż, marchewka", drink: "Sok" },
-    { soup: "Jarzynowa", main: "Naleśniki z serem", drink: "Kakao" },
-    { soup: "Grochówka", main: "Kurczak pieczony, kasza, buraczki", drink: "Kompot" },
+    {
+      soup: dishSoup.Pomidorowa,
+      main: dishMain.Kotlet,
+      drink: dishDrink.Kompot,
+    },
+    {
+      soup: dishSoup.Ogórkowa,
+      main: dishMain.Spaghetti,
+      drink: dishDrink.Herbata,
+    },
+    { soup: dishSoup.Rosół, main: dishMain.Ryba, drink: dishDrink.Sok },
+    {
+      soup: dishSoup.Jarzynowa,
+      main: dishMain.Nalesniki,
+      drink: dishDrink.Kakao,
+    },
+    {
+      soup: dishSoup.Grochówka,
+      main: dishMain.Kurczak,
+      drink: dishDrink.Kompot,
+    },
   ];
-
-  // fix typo in first sample
-  sampleMenus[0]!.main = "Kotlet schabowy, ziemniaki, surówka";
 
   for (let i = 0; i < days.length; i++) {
     const date = startOfDay(days[i]!);
@@ -150,11 +190,11 @@ async function main() {
           fieldDefId: fieldSoup.id,
         },
       },
-      update: { value: sample.soup },
+      update: { dishId: sample.soup.id },
       create: {
         menuEntryId: entry.id,
         fieldDefId: fieldSoup.id,
-        value: sample.soup,
+        dishId: sample.soup.id,
       },
     });
     await prisma.menuEntryValue.upsert({
@@ -164,11 +204,11 @@ async function main() {
           fieldDefId: fieldMain.id,
         },
       },
-      update: { value: sample.main },
+      update: { dishId: sample.main.id },
       create: {
         menuEntryId: entry.id,
         fieldDefId: fieldMain.id,
-        value: sample.main,
+        dishId: sample.main.id,
       },
     });
     await prisma.menuEntryValue.upsert({
@@ -178,17 +218,19 @@ async function main() {
           fieldDefId: fieldDrink.id,
         },
       },
-      update: { value: sample.drink },
+      update: { dishId: sample.drink.id },
       create: {
         menuEntryId: entry.id,
         fieldDefId: fieldDrink.id,
-        value: sample.drink,
+        dishId: sample.drink.id,
       },
     });
   }
 
   const tomorrow = startOfDay(addDays(now, 1));
-  if (!days.some((d) => format(d, "yyyy-MM-dd") === format(tomorrow, "yyyy-MM-dd"))) {
+  if (
+    !days.some((d) => format(d, "yyyy-MM-dd") === format(tomorrow, "yyyy-MM-dd"))
+  ) {
     const entry = await prisma.menuEntry.upsert({
       where: { date: tomorrow },
       update: {},
@@ -202,11 +244,11 @@ async function main() {
           fieldDefId: fieldMain.id,
         },
       },
-      update: { value: sample.main },
+      update: { dishId: sample.main.id },
       create: {
         menuEntryId: entry.id,
         fieldDefId: fieldMain.id,
-        value: sample.main,
+        dishId: sample.main.id,
       },
     });
   }

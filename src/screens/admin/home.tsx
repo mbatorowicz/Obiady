@@ -16,7 +16,7 @@ export default async function AdminDashboard() {
       prisma.user.count({ where: { role: "PARENT" } }),
       prisma.menuEntry.findUnique({
         where: { date: today },
-        include: { values: { include: { fieldDef: true } } },
+        include: { values: { include: { fieldDef: true, dish: true } } },
       }),
       prisma.absence.findMany({
         where: { date: today },

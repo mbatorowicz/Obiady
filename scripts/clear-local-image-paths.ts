@@ -1,5 +1,5 @@
 /**
- * One-off: clear MenuEntryValue.imagePath values that point at local /uploads/
+ * One-off: clear Dish.imagePath values that point at local /uploads/
  * (broken on Vercel). Run with production DATABASE_URL, e.g.:
  *
  *   npx tsx --env-file=.env.local scripts/clear-local-image-paths.ts
@@ -9,7 +9,7 @@ import { PrismaClient } from "@prisma/client";
 const prisma = new PrismaClient();
 
 async function main() {
-  const result = await prisma.menuEntryValue.updateMany({
+  const result = await prisma.dish.updateMany({
     where: { imagePath: { startsWith: "/uploads/" } },
     data: { imagePath: null },
   });

@@ -102,10 +102,19 @@ export async function unlinkParentChildAction(formData: FormData) {
   revalidateAdmin();
 }
 
+function isNextRedirect(error: unknown) {
+  return (
+    !!error &&
+    typeof error === "object" &&
+    "digest" in error &&
+    String((error as { digest?: string }).digest).startsWith("NEXT_REDIRECT")
+  );
+}
+
 export async function createMenuFieldAction(formData: FormData) {
   await requireAdmin();
   const label = String(formData.get("label") || "").trim();
-  if (!label) return;
+  if (!label) redirect("/admin/jadlospis?tab=pozycje");
 
   const max = await prisma.menuFieldDef.aggregate({ _max: { sortOrder: true } });
   await prisma.menuFieldDef.create({
@@ -117,6 +126,7 @@ export async function createMenuFieldAction(formData: FormData) {
     },
   });
   revalidateAdmin();
+  redirect("/admin/jadlospis?tab=pozycje");
 }
 
 export async function updateMenuFieldAction(formData: FormData) {
@@ -132,6 +142,7 @@ export async function updateMenuFieldAction(formData: FormData) {
     },
   });
   revalidateAdmin();
+  redirect("/admin/jadlospis?tab=pozycje");
 }
 
 export async function deleteMenuFieldAction(formData: FormData) {
@@ -139,6 +150,7 @@ export async function deleteMenuFieldAction(formData: FormData) {
   const id = String(formData.get("id"));
   await prisma.menuFieldDef.delete({ where: { id } });
   revalidateAdmin();
+  redirect("/admin/jadlospis?tab=pozycje");
 }
 
 export async function moveMenuFieldAction(formData: FormData) {
@@ -149,10 +161,12 @@ export async function moveMenuFieldAction(formData: FormData) {
     orderBy: { sortOrder: "asc" },
   });
   const index = fields.findIndex((f) => f.id === id);
-  if (index < 0) return;
+  if (index < 0) redirect("/admin/jadlospis?tab=pozycje");
 
   const swapWith = direction === "up" ? index - 1 : index + 1;
-  if (swapWith < 0 || swapWith >= fields.length) return;
+  if (swapWith < 0 || swapWith >= fields.length) {
+    redirect("/admin/jadlospis?tab=pozycje");
+  }
 
   const a = fields[index]!;
   const b = fields[swapWith]!;
@@ -167,6 +181,85 @@ export async function moveMenuFieldAction(formData: FormData) {
     }),
   ]);
   revalidateAdmin();
+  redirect("/admin/jadlospis?tab=pozycje");
+}
+
+export async function createDishAction(formData: FormData) {
+  await requireAdmin();
+  const name = String(formData.get("name") || "").trim();
+  const imageUrl = String(formData.get("imageUrl") || "").trim();
+  const image = formData.get("image");
+
+  if (!name) redirect("/admin/jadlospis?tab=potrawy&error=1");
+
+  let imagePath: string | null = null;
+  if (isRemoteImageUrl(imageUrl)) {
+    imagePath = imageUrl;
+  } else if (image instanceof File && image.size > 0) {
+    imagePath = await saveMenuImage(image);
+  }
+
+  await prisma.dish.create({
+    data: { name, imagePath, active: true },
+  });
+  revalidateAdmin();
+  const returnTo = String(formData.get("returnTo") || "").trim();
+  redirect(returnTo || "/admin/jadlospis?tab=potrawy&ok=1");
+}
+
+export async function updateDishAction(formData: FormData) {
+  await requireAdmin();
+  const id = String(formData.get("id"));
+  const name = String(formData.get("name") || "").trim();
+  const removeImage = formData.get("removeImage") === "on";
+  const imageUrl = String(formData.get("imageUrl") || "").trim();
+  const image = formData.get("image");
+
+  const existing = await prisma.dish.findUnique({ where: { id } });
+  if (!existing) redirect("/admin/jadlospis?tab=potrawy&error=1");
+
+  let imagePath = existing.imagePath;
+  if (removeImage && imagePath) {
+    await deleteMenuImage(imagePath);
+    imagePath = null;
+  }
+  if (isRemoteImageUrl(imageUrl)) {
+    if (imagePath && imagePath !== imageUrl) await deleteMenuImage(imagePath);
+    imagePath = imageUrl;
+  } else if (image instanceof File && image.size > 0) {
+    if (imagePath) await deleteMenuImage(imagePath);
+    imagePath = await saveMenuImage(image);
+  }
+
+  await prisma.dish.update({
+    where: { id },
+    data: {
+      name: name || existing.name,
+      imagePath,
+      active: formData.get("active") === "on",
+    },
+  });
+  revalidateAdmin();
+  redirect("/admin/jadlospis?tab=potrawy&ok=1");
+}
+
+export async function deleteDishAction(formData: FormData) {
+  await requireAdmin();
+  const id = String(formData.get("id") || "").trim();
+  if (!id) redirect("/admin/jadlospis?tab=potrawy&error=1");
+
+  const existing = await prisma.dish.findUnique({ where: { id } });
+  if (!existing) redirect("/admin/jadlospis?tab=potrawy&error=1");
+
+  const inUse = await prisma.menuEntryValue.count({ where: { dishId: id } });
+  if (inUse > 0) {
+    redirect("/admin/jadlospis?tab=potrawy&error=in_use");
+  }
+
+  await deleteMenuImage(existing.imagePath);
+  await prisma.dish.delete({ where: { id } });
+  revalidateAdmin();
+  redirect("/admin/jadlospis?tab=potrawy&ok=1");
 }
 
 export async function saveMenuAction(formData: FormData) {
@@ -184,8 +277,8 @@ export async function saveMenuAction(formData: FormData) {
 
     for (const field of fields) {
       if (!field.required) continue;
-      const val = String(formData.get(`field_${field.id}`) || "").trim();
-      if (!val) {
+      const dishId = String(formData.get(`dish_${field.id}`) || "").trim();
+      if (!dishId) {
         throw new Error(`REQUIRED_FIELD:${field.label}`);
       }
     }
@@ -196,42 +289,14 @@ export async function saveMenuAction(formData: FormData) {
       update: {},
     });
 
-    const existingValues = await prisma.menuEntryValue.findMany({
-      where: { menuEntryId: entry.id },
-    });
-    const existingByField = new Map(
-      existingValues.map((v) => [v.fieldDefId, v]),
-    );
-
     for (const field of fields) {
-      const value = String(formData.get(`field_${field.id}`) || "").trim();
-      const existing = existingByField.get(field.id);
-      const removeImage = formData.get(`removeImage_${field.id}`) === "on";
-      const imageUrl = String(formData.get(`imageUrl_${field.id}`) || "").trim();
-      const image = formData.get(`image_${field.id}`);
+      const dishId = String(formData.get(`dish_${field.id}`) || "").trim();
 
-      if (!value) {
-        if (existing?.imagePath) await deleteMenuImage(existing.imagePath);
+      if (!dishId) {
         await prisma.menuEntryValue.deleteMany({
           where: { menuEntryId: entry.id, fieldDefId: field.id },
         });
         continue;
-      }
-
-      let imagePath = existing?.imagePath ?? null;
-      if (removeImage && imagePath) {
-        await deleteMenuImage(imagePath);
-        imagePath = null;
-      }
-
-      if (isRemoteImageUrl(imageUrl)) {
-        if (imagePath && imagePath !== imageUrl) {
-          await deleteMenuImage(imagePath);
-        }
-        imagePath = imageUrl;
-      } else if (image instanceof File && image.size > 0) {
-        if (imagePath) await deleteMenuImage(imagePath);
-        imagePath = await saveMenuImage(image);
       }
 
       await prisma.menuEntryValue.upsert({
@@ -244,44 +309,31 @@ export async function saveMenuAction(formData: FormData) {
         create: {
           menuEntryId: entry.id,
           fieldDefId: field.id,
-          value,
-          imagePath,
+          dishId,
         },
-        update: { value, imagePath },
+        update: { dishId },
       });
     }
 
     revalidateAdmin();
   } catch (error) {
-    // Next.js redirect() throws — rethrow
-    if (
-      error &&
-      typeof error === "object" &&
-      "digest" in error &&
-      String((error as { digest?: string }).digest).startsWith("NEXT_REDIRECT")
-    ) {
-      throw error;
-    }
-    redirect(`/admin/jadlospis?date=${encodeURIComponent(dateKey)}&error=1`);
+    if (isNextRedirect(error)) throw error;
+    redirect(
+      `/admin/jadlospis?tab=dzien&date=${encodeURIComponent(dateKey)}&error=1`,
+    );
   }
 
-  redirect(`/admin/jadlospis?date=${encodeURIComponent(dateKey)}&ok=1`);
+  redirect(
+    `/admin/jadlospis?tab=dzien&date=${encodeURIComponent(dateKey)}&ok=1`,
+  );
 }
 
 export async function deleteMenuAction(formData: FormData) {
   await requireAdmin();
   const id = String(formData.get("id"));
-  const entry = await prisma.menuEntry.findUnique({
-    where: { id },
-    include: { values: true },
-  });
-  if (entry) {
-    for (const v of entry.values) {
-      if (v.imagePath) await deleteMenuImage(v.imagePath);
-    }
-  }
   await prisma.menuEntry.delete({ where: { id } });
   revalidateAdmin();
+  redirect("/admin/jadlospis?tab=dzien");
 }
 
 export async function setSchoolDayAction(formData: FormData) {

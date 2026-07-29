@@ -34,28 +34,26 @@ const IMAGE_BY_VALUE: { match: RegExp; file: string }[] = [
 async function main() {
   await mkdir(UPLOAD, { recursive: true });
 
-  const values = await prisma.menuEntryValue.findMany({
-    include: { fieldDef: true },
-  });
+  const dishes = await prisma.dish.findMany();
 
-  for (const row of values) {
-    const rule = IMAGE_BY_VALUE.find((r) => r.match.test(row.value));
+  for (const dish of dishes) {
+    const rule = IMAGE_BY_VALUE.find((r) => r.match.test(dish.name));
     if (!rule) {
-      console.log("skip", row.fieldDef.label, row.value);
+      console.log("skip", dish.name);
       continue;
     }
 
-    const destName = `${row.id}-${rule.file}`;
+    const destName = `${dish.id}-${rule.file}`;
     const src = path.join(ASSETS, rule.file);
     const dest = path.join(UPLOAD, destName);
     await copyFile(src, dest);
 
     const imagePath = `/uploads/menu/${destName}`;
-    await prisma.menuEntryValue.update({
-      where: { id: row.id },
+    await prisma.dish.update({
+      where: { id: dish.id },
       data: { imagePath },
     });
-    console.log("ok", row.fieldDef.label, row.value, "->", imagePath);
+    console.log("ok", dish.name, "->", imagePath);
   }
 }
 

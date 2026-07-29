@@ -9,7 +9,7 @@ export default async function ParentMenuPage() {
 
   const menus = await prisma.menuEntry.findMany({
     where: { date: { gte: today, lte: horizon } },
-    include: { values: { include: { fieldDef: true } } },
+    include: { values: { include: { fieldDef: true, dish: true } } },
     orderBy: { date: "asc" },
   });
 
