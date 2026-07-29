@@ -51,3 +51,14 @@ next-env.d.ts
 # uploaded menu photos
 /public/uploads/menu/*
 !/public/uploads/menu/.gitkeep
+
+.vercel
+.env*
+!.env.example
+
+# local agent/skill caches
+.agents/
+.claude/
+.windsurf/
+skills-lock.json
+
