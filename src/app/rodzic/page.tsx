@@ -39,7 +39,7 @@ export default async function ParentHomePage({
       <>
         <PageHeader title="Twoje dzieci" />
         <EmptyState>
-          Brak przypisanych dzieci. Poproś intendentkę o dodanie konta.
+          Nie masz jeszcze przypisanego dziecka. Poproś szkołę o powiązanie konta.
         </EmptyState>
       </>
     );
@@ -87,13 +87,13 @@ export default async function ParentHomePage({
     <>
       <PageHeader
         title={`Cześć, ${session!.user.name.split(" ")[0]}`}
-        description="Zaznacz dni bez obiadu — porcja nie będzie przygotowywana."
+        description="Zaznacz dni bez obiadu — kuchnia nie przygotuje porcji."
       />
 
       {params.ok === "added" || params.ok === "removed" ? (
         <div className="toast-ok" role="status">
           {params.ok === "added"
-            ? `Zgłoszono brak obiadu${
+            ? `Zapisano brak obiadu${
                 params.day
                   ? ` na ${formatPl(parseDateKey(params.day), "d MMMM")}`
                   : ""
@@ -155,25 +155,25 @@ export default async function ParentHomePage({
             </p>
             <dl className="mt-2 space-y-1 text-xs">
               <div className="flex justify-between gap-2">
-                <dt className="text-ink-soft">Dni żywieniowe</dt>
+                <dt className="text-ink-soft">Dni z żywieniem</dt>
                 <dd>{invoice.mealDays}</dd>
               </div>
               <div className="flex justify-between gap-2">
-                <dt className="text-ink-soft">Nieobecności (w terminie)</dt>
+                <dt className="text-ink-soft">Brak obiadu (w terminie)</dt>
                 <dd>{invoice.excusedAbsences}</dd>
               </div>
               <div className="flex justify-between gap-2">
-                <dt className="text-ink-soft">Dni płatne</dt>
+                <dt className="text-ink-soft">Dni do zapłaty</dt>
                 <dd>{invoice.billableDays}</dd>
               </div>
             </dl>
             <Link href="/rodzic/platnosci" className="btn btn-primary w-full mt-3 btn-xs">
-              Dane do przelewu
+              Jak zapłacić
             </Link>
           </div>
           <div className="panel text-xs text-ink-soft">
-            Zgłoszenia do {deadlineHour}:00 w dniu obiadu. Przy dniu widać skrót z
-            jadłospisu.
+            Termin zgłoszeń: do {deadlineHour}:00 w dniu obiadu. Przy dniu widać
+            skrót jadłospisu.
           </div>
         </aside>
       </div>

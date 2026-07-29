@@ -13,9 +13,9 @@ const fraunces = Fraunces({
 });
 
 export const metadata: Metadata = {
-  title: "Obiady szkolne",
+  title: "Obiady",
   description:
-    "Zgłaszanie nieobecności na obiadach i rozliczenia miesięczne dla szkoły",
+    "Zgłaszanie braku obiadu i miesięczne rozliczenia żywienia w szkole",
 };
 
 export default function RootLayout({

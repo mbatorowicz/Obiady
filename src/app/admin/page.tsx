@@ -34,28 +34,32 @@ export default async function AdminDashboard() {
   return (
     <>
       <PageHeader
-        title="Pulpit"
+        title="Start"
         description={`Dziś: ${formatPl(today, "EEEE, d MMMM yyyy")}.`}
       />
 
       <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-4 mb-4">
-        <Stat label="Aktywne dzieci" value={String(childrenCount)} />
+        <Stat label="Dzieci w żywieniu" value={String(childrenCount)} />
         <Stat label="Konta rodziców" value={String(parentsCount)} />
         <Stat
           label="Porcje na dziś"
           value={isMealDay ? String(portions) : "—"}
-          hint={isMealDay ? `${absencesToday.length} nieobecności` : "Bez żywienia"}
+          hint={
+            isMealDay
+              ? `${absencesToday.length} zgłoszeń braku obiadu`
+              : "Dzień bez żywienia"
+          }
         />
-        <Stat label="Nierozliczone" value={String(unpaid)} />
+        <Stat label="Do zapłaty" value={String(unpaid)} />
       </div>
 
       <div className="grid gap-3 lg:grid-cols-2">
         <section className="panel">
-          <h2 className="font-display text-lg mb-1">Menu na dziś</h2>
+          <h2 className="font-display text-lg mb-1">Jadłospis na dziś</h2>
           {menuToday ? (
             <MenuThumbsSummary values={menuToday.values} thumbSize={56} />
           ) : (
-            <p className="text-ink-soft text-sm">Brak wpisu jadłospisu.</p>
+            <p className="text-ink-soft text-sm">Brak wpisu w jadłospisie.</p>
           )}
           <Link href="/admin/jadlospis" className="btn btn-secondary btn-xs mt-2">
             Edytuj jadłospis
@@ -63,10 +67,10 @@ export default async function AdminDashboard() {
         </section>
 
         <section className="panel">
-          <h2 className="font-display text-lg mb-1">Szybkie akcje</h2>
+          <h2 className="font-display text-lg mb-1">Na skróty</h2>
           <div className="flex flex-wrap gap-1.5">
             <Link href="/admin/porcje" className="btn btn-primary btn-xs">
-              Lista porcji
+              Porcje dla kuchni
             </Link>
             <Link href="/admin/rozliczenia" className="btn btn-secondary btn-xs">
               Rozliczenia

@@ -15,10 +15,10 @@ export default async function AdminLayout({
   return (
     <AppShell
       brandHref="/admin"
-      title="Panel intendentki"
+      title="Panel szkoły"
       userName={session.user.name}
       nav={[
-        { href: "/admin", label: "Pulpit" },
+        { href: "/admin", label: "Start" },
         { href: "/admin/porcje", label: "Porcje" },
         { href: "/admin/jadlospis", label: "Jadłospis" },
         { href: "/admin/dzieci", label: "Dzieci" },

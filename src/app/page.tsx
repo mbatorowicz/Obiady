@@ -23,11 +23,11 @@ export default async function HomePage() {
           Obiady
         </p>
         <h1 className="max-w-xl text-xl md:text-2xl font-medium leading-snug text-white/90 mb-3">
-          Jasne rozliczenia i zgłoszenia nieobecności na szkolny obiad.
+          Zgłoś brak obiadu. Zobacz, ile zapłacić w tym miesiącu.
         </h1>
         <p className="max-w-lg text-white/75 mb-8">
-          Rodzice zaznaczają dni bez porcji. Intendentka ma listę dla kuchni i
-          należności za miesiąc.
+          Rodzice zaznaczają dni bez porcji. Szkoła ma listę dla kuchni i
+          przejrzyste rozliczenia.
         </p>
         <div className="flex flex-wrap gap-3">
           <Link

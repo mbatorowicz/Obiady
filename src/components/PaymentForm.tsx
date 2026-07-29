@@ -48,7 +48,7 @@ export function PaymentForm({
 
   return (
     <form action={registerPaymentAction} className="panel form-stack max-w-xl">
-      <h2 className="font-display text-lg">Zarejestruj wpłatę</h2>
+      <h2 className="font-display text-lg">Nowa wpłata</h2>
 
       <Field label="Kto płaci (konto)" htmlFor="payerUserId">
         <select
@@ -69,7 +69,7 @@ export function PaymentForm({
             }
           }}
         >
-          <option value="">— wpłata bez konta / gotówka —</option>
+          <option value="">— bez konta w systemie (np. gotówka) —</option>
           {parents.map((p) => (
             <option key={p.id} value={p.id}>
               {p.name}
@@ -178,7 +178,7 @@ export function PaymentForm({
       </Field>
 
       <button type="submit" className="btn btn-primary">
-        Zapisz i wystaw pokwitowanie
+        Zapisz i otwórz pokwitowanie
       </button>
     </form>
   );

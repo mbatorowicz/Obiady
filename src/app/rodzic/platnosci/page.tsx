@@ -49,8 +49,8 @@ export default async function ParentPaymentsPage({
   return (
     <>
       <PageHeader
-        title="Dane do przelewu"
-        description="Przelej należność na konto szkoły — użyj podanego tytułu."
+        title="Jak zapłacić"
+        description="Przelej należność na konto szkoły. W tytule użyj podanego tekstu."
       />
 
       <div className="flex flex-wrap gap-1.5 mb-3">
@@ -87,7 +87,7 @@ export default async function ParentPaymentsPage({
           </Field>
 
           <p className="text-xs text-ink-soft">
-            Status aktualizuje intendentka po zaksięgowaniu przelewu.
+            Status aktualizuje szkoła po zaksięgowaniu przelewu.
           </p>
         </div>
 

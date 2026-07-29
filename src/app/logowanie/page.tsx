@@ -7,6 +7,7 @@ export default async function LoginPage({
   searchParams: Promise<{ error?: string; callbackUrl?: string }>;
 }) {
   const params = await searchParams;
+  const showDemo = process.env.SHOW_DEMO_ACCOUNTS === "1";
 
   return (
     <div className="min-h-screen flex items-center justify-center px-4 py-10">
@@ -16,8 +17,9 @@ export default async function LoginPage({
         </Link>
         <h1 className="mt-3 text-2xl font-display">Logowanie</h1>
         <p className="mt-1 text-ink-soft text-sm mb-6">
-          Konta demonstracyjne: intendentka@szkola.pl / rodzic@example.com — hasło{" "}
-          <code className="text-ink">haslo123</code>
+          {showDemo
+            ? "Konta demonstracyjne: intendentka@szkola.pl / rodzic@example.com — hasło haslo123"
+            : "Zaloguj się kontem nadanym przez szkołę."}
         </p>
 
         {params.error ? (
@@ -55,7 +57,7 @@ export default async function LoginPage({
             />
           </div>
           <button type="submit" className="btn btn-primary w-full">
-            Zaloguj
+            Zaloguj się
           </button>
         </form>
       </div>

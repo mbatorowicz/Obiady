@@ -21,13 +21,13 @@ export default async function AdminSettingsPage() {
     <>
       <PageHeader
         title="Ustawienia"
-        description="Stawka, konto, deadline, pola jadłospisu i wyjątki kalendarza."
+        description="Cena obiadu, konto do przelewu, termin zgłoszeń, pola jadłospisu i wyjątki w kalendarzu."
       />
 
       <div className="grid gap-4 lg:grid-cols-2">
         <form action={saveSettingsAction} className="panel form-stack">
           <h2 className="font-display text-lg">Ogólne</h2>
-          <Field label="Stawka (PLN)" htmlFor="mealPrice">
+          <Field label="Cena obiadu (PLN)" htmlFor="mealPrice">
             <input
               id="mealPrice"
               name="mealPrice"
@@ -39,7 +39,7 @@ export default async function AdminSettingsPage() {
               defaultValue={settings?.mealPrice ?? 10}
             />
           </Field>
-          <Field label="Odbiorca" htmlFor="bankRecipient">
+          <Field label="Odbiorca przelewu" htmlFor="bankRecipient">
             <input
               id="bankRecipient"
               name="bankRecipient"
@@ -48,7 +48,7 @@ export default async function AdminSettingsPage() {
               defaultValue={settings?.bankRecipient ?? ""}
             />
           </Field>
-          <Field label="Nr rachunku" htmlFor="bankAccount">
+          <Field label="Numer rachunku" htmlFor="bankAccount">
             <input
               id="bankAccount"
               name="bankAccount"
@@ -57,7 +57,7 @@ export default async function AdminSettingsPage() {
               defaultValue={settings?.bankAccount ?? ""}
             />
           </Field>
-          <Field label="Deadline (godz.)" htmlFor="deadlineHour">
+          <Field label="Termin zgłoszeń (godzina)" htmlFor="deadlineHour">
             <input
               id="deadlineHour"
               name="deadlineHour"
@@ -70,7 +70,8 @@ export default async function AdminSettingsPage() {
             />
           </Field>
           <p className="text-xs text-ink-soft">
-            Zgłoszenia przyjmowane do tej godziny w dniu obiadu.
+            Rodzic może zgłosić brak obiadu do tej godziny w dniu posiłku. Późniejsze
+            zgłoszenie nie obniża należności.
           </p>
           <button type="submit" className="btn btn-primary">
             Zapisz ustawienia
@@ -78,16 +79,16 @@ export default async function AdminSettingsPage() {
         </form>
 
         <form action={setSchoolDayAction} className="panel form-stack">
-          <h2 className="font-display text-lg">Wyjątek dnia żywieniowego</h2>
+          <h2 className="font-display text-lg">Wyjątek w kalendarzu</h2>
           <Field label="Data" htmlFor="date">
             <input id="date" name="date" type="date" required className="input" />
           </Field>
           <label className="flex items-center gap-2 text-sm">
             <input type="checkbox" name="hasMeals" defaultChecked />
-            Jest żywienie tego dnia
+            Tego dnia jest żywienie
           </label>
           <Field label="Notatka" htmlFor="note">
-            <input id="note" name="note" className="input" placeholder="Ferie zimowe" />
+            <input id="note" name="note" className="input" placeholder="np. ferie zimowe" />
           </Field>
           <button type="submit" className="btn btn-primary">
             Zapisz wyjątek
@@ -98,7 +99,7 @@ export default async function AdminSettingsPage() {
                 <li key={o.id} className="flex justify-between gap-2">
                   <span>{toDateKey(o.date)}</span>
                   <span className={o.hasMeals ? "text-ok" : "text-danger"}>
-                    {o.hasMeals ? "z obiadami" : "bez"}
+                    {o.hasMeals ? "z obiadami" : "bez żywienia"}
                     {o.note ? ` · ${o.note}` : ""}
                   </span>
                 </li>
@@ -111,9 +112,9 @@ export default async function AdminSettingsPage() {
       <section className="panel mt-4">
         <div className="flex flex-wrap items-end justify-between gap-3 mb-2">
           <div>
-            <h2 className="font-display text-lg">Pola jadłospisu</h2>
+            <h2 className="font-display text-lg">Pozycje jadłospisu</h2>
             <p className="text-xs text-ink-soft">
-              Dodawaj, zmieniaj nazwy, kolejność i wymagalność pól (np. Zupa, Deser).
+              Nazwy, kolejność i wymagalność (np. Zupa, Drugie danie, Deser).
             </p>
           </div>
           <form action={createMenuFieldAction} className="flex flex-wrap gap-2 items-end">

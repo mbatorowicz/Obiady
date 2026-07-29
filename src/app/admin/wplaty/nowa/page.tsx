@@ -53,11 +53,11 @@ export default async function NewPaymentPage({
     <>
       <PageHeader
         title="Nowa wpłata"
-        description={`Rozliczenie: ${month}/${year}. Pozostałe należności wyliczone z faktur.`}
+        description={`Miesiąc ${month}/${year}. Kwoty pozostałe do zapłaty według rozliczeń.`}
       />
       <p className="text-xs text-ink-soft mb-3">
-        Przykład: jeśli dziecko ma do zapłaty {formatMoney(childOptions[0]?.remaining ?? 0)},
-        kwota domyślna ustawi się po wyborze dziecka.
+        Po wyborze dziecka możesz uzupełnić kwotę — np. pozostałe{" "}
+        {formatMoney(childOptions[0]?.remaining ?? 0)} dla pierwszego na liście.
       </p>
       <PaymentForm
         parents={parents.map((p) => ({

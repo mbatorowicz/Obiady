@@ -15,10 +15,10 @@ export default async function ParentLayout({
   return (
     <AppShell
       brandHref="/rodzic"
-      title="Panel rodzica"
+      title="Konto rodzica"
       userName={session.user.name}
       nav={[
-        { href: "/rodzic", label: "Start" },
+        { href: "/rodzic", label: "Kalendarz" },
         { href: "/rodzic/jadlospis", label: "Jadłospis" },
         { href: "/rodzic/historia", label: "Historia" },
         { href: "/rodzic/platnosci", label: "Płatności" },

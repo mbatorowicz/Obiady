@@ -44,7 +44,7 @@ export function AbsenceCalendar({
           {formatPl(start, "LLLL yyyy")}
         </h2>
         <p className="text-sm text-ink-soft">
-          Zgłoszenia do {deadlineHour}:00 w dniu obiadu
+          Termin: do {deadlineHour}:00 w dniu obiadu
         </p>
       </div>
       <div className="grid grid-cols-7 gap-1 text-center text-xs font-semibold text-ink-soft mb-2">

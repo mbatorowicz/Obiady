@@ -139,7 +139,7 @@ export default async function AdminBillingPage({
               <th>Dziecko</th>
               <th className="col-class">Klasa</th>
               <th className="col-num">Dni</th>
-              <th className="col-num">Nieob.</th>
+              <th className="col-num">Brak</th>
               <th className="col-num">Kwota</th>
               <th>Tytuł</th>
               <th className="col-status">Status</th>

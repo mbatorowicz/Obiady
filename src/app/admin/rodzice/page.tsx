@@ -26,7 +26,7 @@ export default async function AdminParentsPage() {
     <>
       <PageHeader
         title="Rodzice"
-        description="Konta rodziców i powiązania z dziećmi."
+        description="Konta rodziców oraz powiązanie z dziećmi."
       />
 
       <div className="grid gap-4 lg:grid-cols-2">

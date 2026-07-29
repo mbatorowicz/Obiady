@@ -54,7 +54,7 @@ export default async function AdminPortionsPage({
     <>
       <PageHeader
         title="Porcje na dzień"
-        description="Lista dla kuchni — kto dostaje obiad."
+        description="Lista dla kuchni: kto dostaje obiad, a kto zgłosił brak."
       />
 
       <div className="no-print mb-3 flex flex-wrap items-end gap-2">
@@ -83,19 +83,19 @@ export default async function AdminPortionsPage({
           {formatPl(date, "EEEE, d MMMM yyyy")}
         </h2>
         {!isMealDay ? (
-          <p className="text-warn text-sm font-semibold">Dzień bez żywienia.</p>
+          <p className="text-warn text-sm font-semibold">Tego dnia nie ma żywienia.</p>
         ) : (
           <p className="font-display text-2xl text-brand">
             {eating.length} porcji
             <span className="text-sm text-ink-soft font-sans font-normal ml-2">
-              / {children.length} · {absences.length} nieobecności
+              / {children.length} · {absences.length} bez obiadu
             </span>
           </p>
         )}
         <p className="text-xs text-ink-soft mt-1">
           {menu ? menuSummary(menu.values, 4) || "Brak menu" : "Brak wpisu jadłospisu"}
           {" · "}
-          deadline do {settings?.deadlineHour ?? 14}:00 w dniu obiadu
+          termin zgłoszeń do {settings?.deadlineHour ?? 14}:00 w dniu obiadu
         </p>
       </div>
 

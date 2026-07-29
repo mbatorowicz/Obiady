@@ -16,7 +16,7 @@ export default async function ParentMenuPage() {
   return (
     <>
       <PageHeader
-        title="Zaplanowany jadłospis"
+        title="Jadłospis"
         description="Najbliższe 30 dni. Kliknij zdjęcie, aby powiększyć."
       />
 

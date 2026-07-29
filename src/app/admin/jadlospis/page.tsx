@@ -43,7 +43,7 @@ export default async function AdminMenuPage({
     <>
       <PageHeader
         title="Jadłospis"
-        description="Każda pozycja ma własne zdjęcie. Kliknij „Edytuj” przy dniu, aby wypełnić formularz."
+        description="Każda pozycja może mieć własne zdjęcie. „Edytuj” przy dniu otwiera formularz."
       />
 
       <div className="grid gap-4 lg:grid-cols-[22rem_1fr]">

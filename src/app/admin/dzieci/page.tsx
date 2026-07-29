@@ -15,7 +15,7 @@ export default async function AdminChildrenPage() {
 
   return (
     <>
-      <PageHeader title="Dzieci" description="Kartoteka dzieci objętych żywieniem." />
+      <PageHeader title="Dzieci" description="Lista dzieci objętych żywieniem szkolnym." />
 
       <div className="grid gap-4 lg:grid-cols-[16rem_1fr]">
         <form action={createChildAction} className="panel form-stack h-fit">

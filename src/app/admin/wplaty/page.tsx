@@ -42,7 +42,7 @@ export default async function PaymentsListPage({
     <>
       <PageHeader
         title="Wpłaty"
-        description="Historia zarejestrowanych wpłat i pokwitowań."
+        description="Zaksięgowane wpłaty i pokwitowania do druku."
         actions={
           <Link
             href={`/admin/wplaty/nowa?y=${year || now.getFullYear()}&m=${month || now.getMonth() + 1}`}
