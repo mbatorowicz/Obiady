@@ -36,6 +36,12 @@ export default async function HomePage() {
           >
             Zaloguj się
           </Link>
+          <Link
+            href="/prywatnosc"
+            className="btn border border-white/40 text-white hover:bg-white/10 px-6"
+          >
+            Prywatność
+          </Link>
         </div>
       </div>
     </div>

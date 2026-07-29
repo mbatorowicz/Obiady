@@ -60,6 +60,12 @@ export default async function LoginPage({
             Zaloguj się
           </button>
         </form>
+
+        <p className="mt-5 text-center text-xs text-ink-soft">
+          <Link href="/prywatnosc" className="underline">
+            Prywatność / RODO
+          </Link>
+        </p>
       </div>
     </div>
   );

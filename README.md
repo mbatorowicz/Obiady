@@ -60,5 +60,14 @@ albo przez `npx vercel` + lokalne `DATABASE_URL` wskazujące na tę samą bazę.
 
 ## Funkcje
 
-- **Rodzic:** kalendarz braku obiadu (termin w dniu posiłku), jadłospis, historia, dane do przelewu i historia wpłat
-- **Szkoła:** dzieci, rodzice, jadłospis ze zdjęciami, porcje, rozliczenia, wpłaty i pokwitowania, ustawienia
+- **Rodzic:** kalendarz braku obiadu (termin w dniu posiłku), jadłospis, historia, dane do przelewu i historia wpłat, eksport „Moje dane”
+- **Szkoła:** dzieci, rodzice, jadłospis ze zdjęciami, porcje, rozliczenia, wpłaty i pokwitowania, ustawienia, eksport/anonimizacja RODO
+
+## RODO / checklista operacyjna
+
+To **nie jest porada prawna** — przed produkcją zweryfikuj z IOD szkoły.
+
+1. Uzupełnij w **Ustawieniach** dane administratora (nazwa, adres, e-mail RODO) — trafiają na `/prywatnosc`.
+2. Zawrzyj umowy powierzenia (DPA) z dostawcami: **Vercel**, **Neon**, **Vercel Blob**.
+3. Zmień hasła startowe rodziców / wyłącz `SHOW_DEMO_ACCOUNTS` w produkcji.
+4. Eksport JSON: admin (Dzieci / Rodzice), rodzic (`/rodzic/moje-dane`). Anonimizacja konta/karty — tylko admin; rozliczenia zostają.

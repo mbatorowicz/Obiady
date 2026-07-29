@@ -3,6 +3,7 @@ import ParentHome from "@/screens/rodzic/home";
 import ParentJadlospis from "@/screens/rodzic/jadlospis";
 import ParentHistoria from "@/screens/rodzic/historia";
 import ParentPlatnosci from "@/screens/rodzic/platnosci";
+import ParentMojeDane from "@/screens/rodzic/moje-dane";
 
 type Props = {
   params: Promise<{ slug?: string[] }>;
@@ -24,6 +25,7 @@ export default async function ParentRouter({ params, searchParams }: Props) {
   if (a === "platnosci" && slug.length === 1) {
     return <ParentPlatnosci searchParams={searchParams as never} />;
   }
+  if (a === "moje-dane" && slug.length === 1) return <ParentMojeDane />;
 
   notFound();
 }

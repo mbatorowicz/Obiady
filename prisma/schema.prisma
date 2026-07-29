@@ -56,12 +56,16 @@ model ParentChild {
 }
 
 model MealSettings {
-  id            String   @id @default("default")
-  mealPrice     Float    @default(10)
-  bankAccount   String   @default("00 0000 0000 0000 0000 0000 0000")
-  bankRecipient String   @default("Szkoła")
-  deadlineHour  Int      @default(14)
-  updatedAt     DateTime @updatedAt
+  id                 String   @id @default("default")
+  mealPrice          Float    @default(10)
+  bankAccount        String   @default("00 0000 0000 0000 0000 0000 0000")
+  bankRecipient      String   @default("Szkoła")
+  deadlineHour       Int      @default(14)
+  controllerName     String   @default("")
+  controllerAddress  String   @default("")
+  privacyEmail       String   @default("")
+  dataRetentionNote  String   @default("Dane kont i kart dzieci przechowujemy przez okres korzystania z żywienia oraz przez czas wymagany przepisami o rachunkowości dla rozliczeń i pokwitowań. Po zakończeniu współpracy dane identyfikujące mogą zostać zanonimizowane przy zachowaniu historii rozliczeń.")
+  updatedAt          DateTime @updatedAt
 }
 
 model SchoolDay {
@@ -80,18 +84,22 @@ model MenuFieldDef {
   createdAt DateTime         @default(now())
   updatedAt DateTime         @updatedAt
   values    MenuEntryValue[]
+  dishes    Dish[]
 }
 
 model Dish {
-  id        String           @id @default(cuid())
-  name      String
-  imagePath String?
-  active    Boolean          @default(true)
-  createdAt DateTime         @default(now())
-  updatedAt DateTime         @updatedAt
-  values    MenuEntryValue[]
+  id         String           @id @default(cuid())
+  name       String
+  imagePath  String?
+  active     Boolean          @default(true)
+  fieldDefId String
+  createdAt  DateTime         @default(now())
+  updatedAt  DateTime         @updatedAt
+  fieldDef   MenuFieldDef     @relation(fields: [fieldDefId], references: [id], onDelete: Restrict)
+  values     MenuEntryValue[]
 
   @@index([name])
+  @@index([fieldDefId])
 }
 
 model MenuEntry {

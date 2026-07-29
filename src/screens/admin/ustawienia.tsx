@@ -4,6 +4,9 @@ import { saveSettingsAction, setSchoolDayAction } from "@/lib/actions/admin-acti
 import { toDateKey } from "@/lib/dates";
 import Link from "next/link";
 
+const DEFAULT_RETENTION =
+  "Dane kont i kart dzieci przechowujemy przez okres korzystania z żywienia oraz przez czas wymagany przepisami o rachunkowości dla rozliczeń i pokwitowań. Po zakończeniu współpracy dane identyfikujące mogą zostać zanonimizowane przy zachowaniu historii rozliczeń.";
+
 export default async function AdminSettingsPage() {
   const [settings, overrides] = await Promise.all([
     prisma.mealSettings.findUnique({ where: { id: "default" } }),
@@ -14,13 +17,17 @@ export default async function AdminSettingsPage() {
     <>
       <PageHeader
         title="Ustawienia"
-        description="Cena obiadu, konto do przelewu, termin zgłoszeń i wyjątki w kalendarzu."
+        description="Cena obiadu, konto do przelewu, termin zgłoszeń, RODO i wyjątki w kalendarzu."
       />
 
       <p className="text-xs text-ink-soft mb-3">
         Pozycje i katalog potraw znajdziesz w{" "}
         <Link href="/admin/jadlospis?tab=pozycje" className="underline">
           Jadłospisie
+        </Link>
+        . Publiczna klauzula:{" "}
+        <Link href="/prywatnosc" className="underline">
+          /prywatnosc
         </Link>
         .
       </p>
@@ -74,6 +81,48 @@ export default async function AdminSettingsPage() {
             Rodzic może zgłosić brak obiadu do tej godziny w dniu posiłku.
             Późniejsze zgłoszenie nie obniża należności.
           </p>
+
+          <h2 className="font-display text-lg pt-2">Administrator danych (RODO)</h2>
+          <Field label="Nazwa administratora" htmlFor="controllerName">
+            <input
+              id="controllerName"
+              name="controllerName"
+              className="input"
+              placeholder="np. Szkoła Podstawowa nr 1"
+              defaultValue={
+                settings?.controllerName || settings?.bankRecipient || ""
+              }
+            />
+          </Field>
+          <Field label="Adres" htmlFor="controllerAddress">
+            <input
+              id="controllerAddress"
+              name="controllerAddress"
+              className="input"
+              placeholder="ulica, kod, miejscowość"
+              defaultValue={settings?.controllerAddress ?? ""}
+            />
+          </Field>
+          <Field label="E-mail w sprawach danych" htmlFor="privacyEmail">
+            <input
+              id="privacyEmail"
+              name="privacyEmail"
+              type="email"
+              className="input"
+              placeholder="iod@szkola.pl"
+              defaultValue={settings?.privacyEmail ?? ""}
+            />
+          </Field>
+          <Field label="Informacja o retencji" htmlFor="dataRetentionNote" inline={false}>
+            <textarea
+              id="dataRetentionNote"
+              name="dataRetentionNote"
+              className="input min-h-24"
+              rows={4}
+              defaultValue={settings?.dataRetentionNote || DEFAULT_RETENTION}
+            />
+          </Field>
+
           <button type="submit" className="btn btn-primary">
             Zapisz ustawienia
           </button>

@@ -1,11 +1,17 @@
 import { prisma } from "@/lib/db";
 import { PageHeader, Field } from "@/components/ui";
 import {
+  anonymizeChildAction,
   createChildAction,
   updateChildAction,
 } from "@/lib/actions/admin-actions";
 
-export default async function AdminChildrenPage() {
+export default async function AdminChildrenPage({
+  searchParams,
+}: {
+  searchParams?: Promise<{ ok?: string; error?: string }>;
+}) {
+  const params = searchParams ? await searchParams : {};
   const children = await prisma.child.findMany({
     orderBy: [{ className: "asc" }, { lastName: "asc" }],
     include: {
@@ -16,6 +22,17 @@ export default async function AdminChildrenPage() {
   return (
     <>
       <PageHeader title="Dzieci" description="Lista dzieci objętych żywieniem szkolnym." />
+
+      {params.ok === "anon" ? (
+        <div className="toast-ok" role="status">
+          Dane dziecka zostały zanonimizowane.
+        </div>
+      ) : null}
+      {params.error ? (
+        <div className="mb-3 rounded-xl bg-red-50 text-danger px-3 py-2 text-sm">
+          Nie udało się wykonać operacji.
+        </div>
+      ) : null}
 
       <div className="grid gap-4 lg:grid-cols-[16rem_1fr]">
         <form action={createChildAction} className="panel form-stack h-fit">
@@ -39,14 +56,18 @@ export default async function AdminChildrenPage() {
         </form>
 
         <div className="panel overflow-x-auto">
+          <p className="text-xs text-ink-soft mb-2">
+            Anonimizacja usuwa imię/nazwisko i powiązania z rodzicami; rozliczenia
+            i pokwitowania zostają w systemie.
+          </p>
           <table className="compact-table">
             <colgroup>
-              <col style={{ width: "18%" }} />
-              <col style={{ width: "18%" }} />
+              <col style={{ width: "16%" }} />
+              <col style={{ width: "16%" }} />
               <col className="col-class" />
               <col className="col-check" />
               <col />
-              <col className="col-actions" />
+              <col className="col-actions" style={{ width: "9rem" }} />
             </colgroup>
             <thead>
               <tr>
@@ -106,13 +127,27 @@ export default async function AdminChildrenPage() {
                       : "—"}
                   </td>
                   <td className="col-actions">
-                    <button
-                      form={`child-${child.id}`}
-                      type="submit"
-                      className="btn btn-secondary btn-xs"
-                    >
-                      OK
-                    </button>
+                    <div className="flex flex-col items-end gap-1">
+                      <button
+                        form={`child-${child.id}`}
+                        type="submit"
+                        className="btn btn-secondary btn-xs"
+                      >
+                        OK
+                      </button>
+                      <a
+                        href={`/api/privacy-export?type=child&id=${child.id}`}
+                        className="btn btn-secondary btn-xs"
+                      >
+                        Eksport
+                      </a>
+                      <form action={anonymizeChildAction}>
+                        <input type="hidden" name="id" value={child.id} />
+                        <button type="submit" className="btn btn-danger btn-xs">
+                          Anonimizuj
+                        </button>
+                      </form>
+                    </div>
                   </td>
                 </tr>
               ))}

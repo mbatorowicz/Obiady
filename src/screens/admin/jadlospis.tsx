@@ -48,6 +48,7 @@ export default async function AdminMenuPage({
     error?: string;
     editDish?: string;
     returnDate?: string;
+    fieldDefId?: string;
   }>;
 }) {
   const params = await searchParams;
@@ -70,7 +71,12 @@ export default async function AdminMenuPage({
       include: { values: { include: menuValueInclude } },
     }),
     prisma.dish.findMany({
-      orderBy: [{ active: "desc" }, { name: "asc" }],
+      include: { fieldDef: true },
+      orderBy: [
+        { fieldDef: { sortOrder: "asc" } },
+        { active: "desc" },
+        { name: "asc" },
+      ],
     }),
   ]);
 
@@ -84,6 +90,14 @@ export default async function AdminMenuPage({
   const editingDish = params.editDish
     ? dishes.find((d) => d.id === params.editDish)
     : null;
+  const fieldLabelById = new Map(fields.map((f) => [f.id, f.label]));
+  const dishCategoryOptions = fields.filter(
+    (f) => f.active || f.id === editingDish?.fieldDefId,
+  );
+  const defaultNewFieldDefId =
+    params.fieldDefId && fields.some((f) => f.id === params.fieldDefId)
+      ? params.fieldDefId
+      : (activeFields[0]?.id ?? "");
 
   return (
     <>
@@ -103,7 +117,12 @@ export default async function AdminMenuPage({
           Zapisano.
         </div>
       ) : null}
-      {params.error === "in_use" ? (
+      {params.error === "in_use" && tab === "pozycje" ? (
+        <div className="mb-3 rounded-xl bg-red-50 text-danger px-3 py-2 text-sm">
+          Nie można usunąć — pozycja ma przypisane potrawy. Najpierw przenieś
+          lub usuń potrawy z tej kategorii.
+        </div>
+      ) : params.error === "in_use" ? (
         <div className="mb-3 rounded-xl bg-red-50 text-danger px-3 py-2 text-sm">
           Nie można usunąć — potrawa jest użyta w jadłospisie. Najpierw odłącz
           ją z dni lub dezaktywuj.
@@ -137,29 +156,35 @@ export default async function AdminMenuPage({
                 Brak aktywnych pozycji — dodaj je w zakładce Pozycje.
               </p>
             ) : (
-              activeFields.map((f) => (
-                <Field
-                  key={`${f.id}-${editDateKey}`}
-                  label={f.label + (f.required ? " *" : "")}
-                  htmlFor={`dish_${f.id}`}
-                  inline={false}
-                >
-                  <select
-                    id={`dish_${f.id}`}
-                    name={`dish_${f.id}`}
-                    className="input"
-                    required={f.required}
-                    defaultValue={dishByField.get(f.id) ?? ""}
+              activeFields.map((f) => {
+                const selectedId = dishByField.get(f.id) ?? "";
+                const options = activeDishes.filter(
+                  (d) => d.fieldDefId === f.id || d.id === selectedId,
+                );
+                return (
+                  <Field
+                    key={`${f.id}-${editDateKey}`}
+                    label={f.label + (f.required ? " *" : "")}
+                    htmlFor={`dish_${f.id}`}
+                    inline={false}
                   >
-                    <option value="">— wybierz potrawę —</option>
-                    {activeDishes.map((d) => (
-                      <option key={d.id} value={d.id}>
-                        {d.name}
-                      </option>
-                    ))}
-                  </select>
-                </Field>
-              ))
+                    <select
+                      id={`dish_${f.id}`}
+                      name={`dish_${f.id}`}
+                      className="input"
+                      required={f.required}
+                      defaultValue={selectedId}
+                    >
+                      <option value="">— wybierz potrawę —</option>
+                      {options.map((d) => (
+                        <option key={d.id} value={d.id}>
+                          {d.name}
+                        </option>
+                      ))}
+                    </select>
+                  </Field>
+                );
+              })
             )}
 
             <button
@@ -176,7 +201,11 @@ export default async function AdminMenuPage({
                 tego dnia).
               </p>
               <Link
-                href={`/admin/jadlospis?tab=potrawy&returnDate=${editDateKey}`}
+                href={`/admin/jadlospis?tab=potrawy&returnDate=${editDateKey}${
+                  activeFields[0]
+                    ? `&fieldDefId=${activeFields[0].id}`
+                    : ""
+                }`}
                 className="btn btn-secondary btn-xs"
               >
                 Przejdź do potraw
@@ -396,6 +425,28 @@ export default async function AdminMenuPage({
                 key={editingDish?.id ?? "new"}
               />
             </Field>
+            <Field label="Pozycja" htmlFor="fieldDefId" inline={false}>
+              <select
+                id="fieldDefId"
+                name="fieldDefId"
+                className="input"
+                required
+                defaultValue={
+                  editingDish?.fieldDefId ?? defaultNewFieldDefId
+                }
+                key={`field-${editingDish?.id ?? "new"}-${defaultNewFieldDefId}`}
+              >
+                <option value="" disabled>
+                  — wybierz pozycję —
+                </option>
+                {dishCategoryOptions.map((f) => (
+                  <option key={f.id} value={f.id}>
+                    {f.label}
+                    {!f.active ? " (nieaktywna)" : ""}
+                  </option>
+                ))}
+              </select>
+            </Field>
             <ImageFileField
               name="image"
               urlName="imageUrl"
@@ -435,6 +486,7 @@ export default async function AdminMenuPage({
                 <tr>
                   <th style={{ width: "4rem" }}>Zdjęcie</th>
                   <th>Nazwa</th>
+                  <th>Pozycja</th>
                   <th className="col-check">Aktywna</th>
                   <th className="col-actions">Akcje</th>
                 </tr>
@@ -457,6 +509,11 @@ export default async function AdminMenuPage({
                         )}
                       </td>
                       <td className="font-semibold">{d.name}</td>
+                      <td className="text-sm">
+                        {d.fieldDef?.label ??
+                          fieldLabelById.get(d.fieldDefId) ??
+                          "—"}
+                      </td>
                       <td className="col-check">
                         {d.active ? (
                           <span className="text-ok text-xs">tak</span>

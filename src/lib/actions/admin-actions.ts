@@ -21,6 +21,10 @@ export async function saveSettingsAction(formData: FormData) {
   const bankAccount = String(formData.get("bankAccount") || "").trim();
   const bankRecipient = String(formData.get("bankRecipient") || "").trim();
   const deadlineHour = Number(formData.get("deadlineHour"));
+  const controllerName = String(formData.get("controllerName") || "").trim();
+  const controllerAddress = String(formData.get("controllerAddress") || "").trim();
+  const privacyEmail = String(formData.get("privacyEmail") || "").trim();
+  const dataRetentionNote = String(formData.get("dataRetentionNote") || "").trim();
 
   await prisma.mealSettings.upsert({
     where: { id: "default" },
@@ -30,8 +34,21 @@ export async function saveSettingsAction(formData: FormData) {
       bankAccount,
       bankRecipient,
       deadlineHour,
+      controllerName,
+      controllerAddress,
+      privacyEmail,
+      dataRetentionNote,
     },
-    update: { mealPrice, bankAccount, bankRecipient, deadlineHour },
+    update: {
+      mealPrice,
+      bankAccount,
+      bankRecipient,
+      deadlineHour,
+      controllerName,
+      controllerAddress,
+      privacyEmail,
+      dataRetentionNote,
+    },
   });
 
   revalidateAdmin();
@@ -148,6 +165,10 @@ export async function updateMenuFieldAction(formData: FormData) {
 export async function deleteMenuFieldAction(formData: FormData) {
   await requireAdmin();
   const id = String(formData.get("id"));
+  const dishCount = await prisma.dish.count({ where: { fieldDefId: id } });
+  if (dishCount > 0) {
+    redirect("/admin/jadlospis?tab=pozycje&error=in_use");
+  }
   await prisma.menuFieldDef.delete({ where: { id } });
   revalidateAdmin();
   redirect("/admin/jadlospis?tab=pozycje");
@@ -187,10 +208,14 @@ export async function moveMenuFieldAction(formData: FormData) {
 export async function createDishAction(formData: FormData) {
   await requireAdmin();
   const name = String(formData.get("name") || "").trim();
+  const fieldDefId = String(formData.get("fieldDefId") || "").trim();
   const imageUrl = String(formData.get("imageUrl") || "").trim();
   const image = formData.get("image");
 
-  if (!name) redirect("/admin/jadlospis?tab=potrawy&error=1");
+  if (!name || !fieldDefId) redirect("/admin/jadlospis?tab=potrawy&error=1");
+
+  const field = await prisma.menuFieldDef.findUnique({ where: { id: fieldDefId } });
+  if (!field) redirect("/admin/jadlospis?tab=potrawy&error=1");
 
   let imagePath: string | null = null;
   if (isRemoteImageUrl(imageUrl)) {
@@ -200,7 +225,7 @@ export async function createDishAction(formData: FormData) {
   }
 
   await prisma.dish.create({
-    data: { name, imagePath, active: true },
+    data: { name, imagePath, fieldDefId, active: true },
   });
   revalidateAdmin();
   const returnTo = String(formData.get("returnTo") || "").trim();
@@ -211,12 +236,17 @@ export async function updateDishAction(formData: FormData) {
   await requireAdmin();
   const id = String(formData.get("id"));
   const name = String(formData.get("name") || "").trim();
+  const fieldDefId = String(formData.get("fieldDefId") || "").trim();
   const removeImage = formData.get("removeImage") === "on";
   const imageUrl = String(formData.get("imageUrl") || "").trim();
   const image = formData.get("image");
 
   const existing = await prisma.dish.findUnique({ where: { id } });
   if (!existing) redirect("/admin/jadlospis?tab=potrawy&error=1");
+
+  if (!fieldDefId) redirect("/admin/jadlospis?tab=potrawy&error=1");
+  const field = await prisma.menuFieldDef.findUnique({ where: { id: fieldDefId } });
+  if (!field) redirect("/admin/jadlospis?tab=potrawy&error=1");
 
   let imagePath = existing.imagePath;
   if (removeImage && imagePath) {
@@ -235,6 +265,7 @@ export async function updateDishAction(formData: FormData) {
     where: { id },
     data: {
       name: name || existing.name,
+      fieldDefId,
       imagePath,
       active: formData.get("active") === "on",
     },
@@ -297,6 +328,11 @@ export async function saveMenuAction(formData: FormData) {
           where: { menuEntryId: entry.id, fieldDefId: field.id },
         });
         continue;
+      }
+
+      const dish = await prisma.dish.findUnique({ where: { id: dishId } });
+      if (!dish || dish.fieldDefId !== field.id) {
+        throw new Error(`DISH_CATEGORY_MISMATCH:${field.label}`);
       }
 
       await prisma.menuEntryValue.upsert({
@@ -396,4 +432,66 @@ export async function updatePaymentStatusAction(formData: FormData) {
     data: { status },
   });
   revalidateAdmin();
+}
+
+export async function anonymizeParentAction(formData: FormData) {
+  await requireAdmin();
+  const id = String(formData.get("id") || "").trim();
+  if (!id) redirect("/admin/rodzice?error=1");
+
+  const user = await prisma.user.findUnique({ where: { id } });
+  if (!user || user.role !== Role.PARENT) {
+    redirect("/admin/rodzice?error=1");
+  }
+
+  const passwordHash = await bcrypt.hash(
+    `anon-${id}-${Date.now()}-${Math.random()}`,
+    10,
+  );
+
+  await prisma.$transaction([
+    prisma.parentChild.deleteMany({ where: { parentId: id } }),
+    prisma.payment.updateMany({
+      where: { payerUserId: id },
+      data: { payerUserId: null, payerName: "[zanonimizowano]" },
+    }),
+    prisma.user.update({
+      where: { id },
+      data: {
+        email: `usuniety+${id}@anon.local`,
+        name: "Konto usunięte",
+        passwordHash,
+      },
+    }),
+  ]);
+
+  revalidateAdmin();
+  redirect("/admin/rodzice?ok=anon");
+}
+
+export async function anonymizeChildAction(formData: FormData) {
+  await requireAdmin();
+  const id = String(formData.get("id") || "").trim();
+  if (!id) redirect("/admin/dzieci?error=1");
+
+  const child = await prisma.child.findUnique({ where: { id } });
+  if (!child) redirect("/admin/dzieci?error=1");
+
+  const token = id.slice(-6).toUpperCase();
+
+  await prisma.$transaction([
+    prisma.parentChild.deleteMany({ where: { childId: id } }),
+    prisma.child.update({
+      where: { id },
+      data: {
+        firstName: "Anonim",
+        lastName: token,
+        className: "—",
+        active: false,
+      },
+    }),
+  ]);
+
+  revalidateAdmin();
+  redirect("/admin/dzieci?ok=anon");
 }

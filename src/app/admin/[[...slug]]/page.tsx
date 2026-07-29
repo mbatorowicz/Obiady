@@ -22,8 +22,12 @@ export default async function AdminRouter({ params, searchParams }: Props) {
 
   const [a, b, c] = slug;
 
-  if (a === "dzieci" && slug.length === 1) return <AdminDzieci />;
-  if (a === "rodzice" && slug.length === 1) return <AdminRodzice />;
+  if (a === "dzieci" && slug.length === 1) {
+    return <AdminDzieci searchParams={searchParams as never} />;
+  }
+  if (a === "rodzice" && slug.length === 1) {
+    return <AdminRodzice searchParams={searchParams as never} />;
+  }
   if (a === "ustawienia" && slug.length === 1) return <AdminUstawienia />;
   if (a === "jadlospis" && slug.length === 1) {
     return <AdminJadlospis searchParams={searchParams as never} />;

@@ -9,10 +9,18 @@ import {
 
 const prisma = new PrismaClient();
 
-async function upsertDish(name: string) {
+async function upsertDish(name: string, fieldDefId: string) {
   const existing = await prisma.dish.findFirst({ where: { name } });
-  if (existing) return existing;
-  return prisma.dish.create({ data: { name, active: true } });
+  if (existing) {
+    if (existing.fieldDefId !== fieldDefId) {
+      return prisma.dish.update({
+        where: { id: existing.id },
+        data: { fieldDefId },
+      });
+    }
+    return existing;
+  }
+  return prisma.dish.create({ data: { name, fieldDefId, active: true } });
 }
 
 async function main() {
@@ -42,13 +50,20 @@ async function main() {
 
   await prisma.mealSettings.upsert({
     where: { id: "default" },
-    update: {},
+    update: {
+      controllerName: "Szkoła Podstawowa nr 1",
+      controllerAddress: "ul. Szkolna 1, 00-001 Warszawa",
+      privacyEmail: "iod@szkola.pl",
+    },
     create: {
       id: "default",
       mealPrice: 12.5,
       bankAccount: "12 3456 7890 1234 5678 9012 3456",
       bankRecipient: "Szkoła Podstawowa nr 1",
       deadlineHour: 14,
+      controllerName: "Szkoła Podstawowa nr 1",
+      controllerAddress: "ul. Szkolna 1, 00-001 Warszawa",
+      privacyEmail: "iod@szkola.pl",
     },
   });
 
@@ -89,24 +104,33 @@ async function main() {
   });
 
   const dishSoup = {
-    Pomidorowa: await upsertDish("Pomidorowa"),
-    Ogórkowa: await upsertDish("Ogórkowa"),
-    Rosół: await upsertDish("Rosół"),
-    Jarzynowa: await upsertDish("Jarzynowa"),
-    Grochówka: await upsertDish("Grochówka"),
+    Pomidorowa: await upsertDish("Pomidorowa", fieldSoup.id),
+    Ogórkowa: await upsertDish("Ogórkowa", fieldSoup.id),
+    Rosół: await upsertDish("Rosół", fieldSoup.id),
+    Jarzynowa: await upsertDish("Jarzynowa", fieldSoup.id),
+    Grochówka: await upsertDish("Grochówka", fieldSoup.id),
   };
   const dishMain = {
-    Kotlet: await upsertDish("Kotlet schabowy, ziemniaki, surówka"),
-    Spaghetti: await upsertDish("Spaghetti bolognese"),
-    Ryba: await upsertDish("Ryba panierowana, ryż, marchewka"),
-    Nalesniki: await upsertDish("Naleśniki z serem"),
-    Kurczak: await upsertDish("Kurczak pieczony, kasza, buraczki"),
+    Kotlet: await upsertDish(
+      "Kotlet schabowy, ziemniaki, surówka",
+      fieldMain.id,
+    ),
+    Spaghetti: await upsertDish("Spaghetti bolognese", fieldMain.id),
+    Ryba: await upsertDish(
+      "Ryba panierowana, ryż, marchewka",
+      fieldMain.id,
+    ),
+    Nalesniki: await upsertDish("Naleśniki z serem", fieldMain.id),
+    Kurczak: await upsertDish(
+      "Kurczak pieczony, kasza, buraczki",
+      fieldMain.id,
+    ),
   };
   const dishDrink = {
-    Kompot: await upsertDish("Kompot"),
-    Herbata: await upsertDish("Herbata"),
-    Sok: await upsertDish("Sok"),
-    Kakao: await upsertDish("Kakao"),
+    Kompot: await upsertDish("Kompot", fieldDrink.id),
+    Herbata: await upsertDish("Herbata", fieldDrink.id),
+    Sok: await upsertDish("Sok", fieldDrink.id),
+    Kakao: await upsertDish("Kakao", fieldDrink.id),
   };
 
   const jan = await prisma.child.upsert({

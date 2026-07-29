@@ -37,6 +37,13 @@ export function AppShell({
         </div>
       </header>
       <main className="mx-auto max-w-6xl px-4 py-4 md:py-5">{children}</main>
+      <footer className="no-print border-t border-line/60 mt-4">
+        <div className="mx-auto max-w-6xl px-4 py-3 text-xs text-ink-soft flex flex-wrap gap-3">
+          <Link href="/prywatnosc" className="underline">
+            Prywatność / RODO
+          </Link>
+        </div>
+      </footer>
     </div>
   );
 }

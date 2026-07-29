@@ -22,6 +22,7 @@ export default async function ParentLayout({
         { href: "/rodzic/jadlospis", label: "Jadłospis" },
         { href: "/rodzic/historia", label: "Historia" },
         { href: "/rodzic/platnosci", label: "Płatności" },
+        { href: "/rodzic/moje-dane", label: "Moje dane" },
       ]}
     >
       {children}
